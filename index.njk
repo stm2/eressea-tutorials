@@ -1,6 +1,11 @@
 ---
 layout: base-layout.njk
 title: Eressea Beispielpartie
+pagination:
+  data: collections.race
+  size: 12
+  reverse: false
+  alias: races
 ---
 
 <h1>Eressea Tutorial 2024</h1>
@@ -10,7 +15,7 @@ Bericht hier zur Verfügung stellen.</p>
 
 <p>Some of these will be in English, some in German.</p>
 
-{% for post in collections.race %}
+{% for post in races %}
   <article>
     <h2>
       <a href="{{ post.url | url }}">{{ post.data.title }}</a>

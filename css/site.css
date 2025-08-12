@@ -23,21 +23,22 @@ pre {
 
 header {
   display: flex;
-  align-items: center; /* Vertically align */
+  align-items: center;
+  /* Vertically align */
   padding: 5px 16px;
   color: white;
   background-color: #0747A6;
   border-radius: 8px;
 }
 
-header > a:link,
-header > a:visited,
-header > a:hover {
+header>a:link,
+header>a:visited,
+header>a:hover {
   color: white;
   text-decoration: none;
 }
 
-header > a:hover {
+header>a:hover {
   text-decoration: underline;
 }
 
@@ -54,7 +55,7 @@ header > a:hover {
 
 main {
   padding: 5px 16px;
-  word-wrap:break-word;
+  word-wrap: break-word;
 }
 
 footer {
@@ -74,12 +75,12 @@ h1 {
   font-size: 2em;
 }
 
-h1 > a:link,
-h1 > a:visited {
+h1>a:link,
+h1>a:visited {
   text-decoration: none;
 }
 
-h1 > a:hover {
+h1>a:hover {
   color: #20399daa;
   text-decoration: underline;
 }
@@ -97,11 +98,21 @@ a:hover {
   color: #20399daa;
 }
 
-time {
+time,
+author {
   color: #666666;
 }
 
 article img {
   width: 100%;
   height: auto;
+}
+
+ol.navlist {
+  list-style: none;
+  padding-left: 0;
+}
+
+ol.navlist li {
+  display: inline-block;
 }
