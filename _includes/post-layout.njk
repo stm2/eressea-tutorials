@@ -1,6 +1,8 @@
 ---
 layout: base-layout.njk
 ---
+<script src="{{ '/crs/crs-passthrough.js' | url }}" defer></script>
+
 <article>
   <h1>{{ title }}</h1>
   {% if author %}<author>{{author}}</author>,{% else %}<author>N.N.</author>,{% endif %}
