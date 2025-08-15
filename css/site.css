@@ -116,3 +116,40 @@ ol.navlist {
 ol.navlist li {
   display: inline-block;
 }
+
+/* CR map unit list styling */
+.cr-region-details .unit_block ul {
+  list-style: none;
+  padding-left: 0.5em;
+  margin: 0.25em 0;
+}
+
+.cr-region-details .unit_block li {
+  position: relative;
+  padding-left: 1.2em;
+  cursor: pointer;
+}
+
+.cr-region-details .unit_block li::before {
+  position: absolute;
+  left: 0;
+  width: 1em;
+  display: inline-block;
+  text-align: center;
+  content: '-';
+  color: #666;
+  font-weight: normal;
+}
+
+.cr-region-details .unit_block li.owner-unit::before {
+  content: '*';
+  font-weight: bold;
+}
+
+.cr-region-details .unit_block li:hover::before {
+  transform: scale(1.1);
+}
+
+.cr-region-details .unit_block li.owner-unit:hover::before {
+  color: #ffcc33;
+}

@@ -44,6 +44,14 @@ const defaultImage = 'region';
 
 let crids = [];
 let cridCounter = 0;
+let cridOwners = {}; // crid -> template inputPath
+
+function validateCrid(id) {
+  if (typeof id !== 'string') return { ok: false, message: 'crid must be a string' };
+  if (id !== id.toLowerCase()) return { ok: false, message: `crid '${id}' must be lowercase` };
+  if (!/^[a-z0-9_-]+$/.test(id)) return { ok: false, message: `crid '${id}' contains invalid characters (allowed: a-z 0-9 _ -)` };
+  return { ok: true };
+}
 
 function getColor(terrain) {
   return colors[terrain] || colors['default'];
@@ -63,18 +71,40 @@ function transformy(region) {
   return Math.round(region.y * -rwidth * 3 / 4);
 }
 
+function itoa36(num) {
+  return num.toString(36);
+}
+
+function parseFaction(line, matches) {
+  const parts = line.trim().split(/\s+/);
+  const numid = parseInt(matches[1], 10);
+  const faction = { id: itoa36(numid), numid, tags: {} };
+  console.log("found faction ", faction);
+
+  return faction;
+}
+
 function parseRegion(line, matches) {
   const parts = line.trim().split(/\s+/);
-  const region = { tags: [], units: [] };
+  // Use plain objects for tags & units (units keyed by id)
+  const region = { tags: {}, units: {} };
   region.x = parseInt(matches[1], 10);
   region.y = parseInt(matches[2], 10);
-  if (matches[3]) region.z = parseInt(matches[3], 10);
+  if (matches[3]) region.z = parseInt(matches[3], 10); else region.z = 0;
   console.log("found region ", region);
 
   return region;
 }
 
-function outputRegion(region, bounds, crid) {
+function parseUnit(line, matches) {
+  const parts = line.trim().split(/\s+/);
+  const unit = { id: itoa36(parseInt(matches[1], 10)), name: '???', tags: {}, skills: {} };
+  console.log("found unit ", unit);
+
+  return unit;
+}
+
+function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
   if (!region) return '';
   if (!region.tags.Terrain) return '';
   let color = getColor(region.tags.Terrain);
@@ -91,13 +121,15 @@ function outputRegion(region, bounds, crid) {
   const y = transformy(region);
   let tt = region.tags.Name ? region.tags.Name : region.tags.Terrain;
   tt += ` (${xx}, ${yy})`;
-  let desc = '';
+  // We no longer build HTML inside <desc>; we will store JSON in data-* attributes.
   // console.log('tags ', region.tags);
 
 
-  desc = Object.entries(region.tags)
-    .map(([key, value]) => `<i>${key}</i>: ${value}<br>`)
-    .join('\n');
+  // Prepare JSON payloads
+  let regionData = {};
+  if (withDetails) {
+    regionData = { x: region.x, y: region.y, tags: region.tags };
+  }
 
   let id = 'r_';
   id += xx < 0 ? `m${-xx}` : xx;
@@ -109,35 +141,32 @@ function outputRegion(region, bounds, crid) {
   bounds.xmax = Math.max(bounds.xmax, x);
   bounds.ymax = Math.max(bounds.ymax, y);
   // console.log(region.units);
-  let units = '';
-  let udesc = '';
-  if (region.units.length > 0) {
-    desc += `<b>Units:</b><br>`;
-    Object.entries(region.units).forEach(([id, unit]) => {
-      // console.log(`Unit ${id} skills:`, unit.skills);
-      const uid = `u_${unit.id}_${crid}`;
-      udesc += `<desc id="${uid}"><div></div><div>`;
-      desc += `<a href="#${uid}" onclick="showDescription(event, 'udetails_${crid}', '${uid}');">${unit.tags.Name} (${unit.id})</a><br>`;
-      udesc += `${unit.tags.Name} (${unit.id})`;
-      if (unit.skills) {
-        udesc += ' ' + Object.entries(unit.skills).map(([key, value]) => `${key} ${value}`).join(', ');
-      }
-      udesc += '<br>\n';
-      udesc += Object.entries(unit.tags).filter(([key, value]) => key !== 'Name')
-        .map(([key, value]) => `<i>${key}</i>: ${value}<br>`)
-        .join('\n');
-      udesc += `</div></desc>`;
+  let unitsMarkup = '';
+  let unitsData = [];
+  if (withDetails && Object.keys(region.units).length > 0) {
+    unitsData = Object.entries(region.units).map(([id, unit]) => {
+      return {
+        id: unit.id,
+        name: unit.tags.Name || unit.id,
+        faction: unit.faction ? unit.faction.id : null,
+        factionName: unit.factionName || null,
+        isOwner: ownerFactionId && unit.faction && unit.faction.id === ownerFactionId ? true : false,
+        tags: unit.tags,
+        skills: unit.skills || {}
+      };
     });
-
-    units = `<use xlink:href="#units" x="${x}" y="${y}">${udesc}</use></a>`;
+    // Keep a single <use> for units icon location (optional)
+    unitsMarkup = `<use xlink:href="#units" x="${x}" y="${y}" data-units="${encodeURIComponent(JSON.stringify(unitsData))}"></use>`;
   }
 
   // onmousemove="showTooltip(evt, '${tt}');"
   // onmouseout="hideTooltip();"
   // onclick = "showDescription(event, '${desc}');" 
-  return `<a href="#${id}" onmousemove="showTooltip(evt, 'tooltip_${crid}', '${tt}');" onmouseout="hideTooltip('tooltip_${crid}');" onclick = "showDescription(event, 'rdetails_${crid}', '${id}');"  >` +
-    `<use xlink:href="#${tag}" id="${id}" x="${x}" y="${y}" ${color}><title>${tt}</title><desc>${desc}</desc></use>\n` +
-    units + `</a>`;
+  const regionDataAttr = withDetails ? ` data-region="${encodeURIComponent(JSON.stringify(regionData))}"` : '';
+  const clickHandler = withDetails ? ` onclick="showDescription(event, 'rdetails_${crid}', '${id}');"` : '';
+  return `<a href="#${id}" onmousemove="showTooltip(evt, 'tooltip_${crid}', '${tt}');" onmouseout="hideTooltip('tooltip_${crid}');"${clickHandler}>` +
+    `<use xlink:href="#${tag}" id="${id}" x="${x}" y="${y}" ${color}${regionDataAttr} data-crid="${crid}"><title>${tt}</title></use>\n` +
+    unitsMarkup + `</a>`;
 
 }
 
@@ -193,102 +222,315 @@ function parseSkill(key) {
   return parseInt(key.trim().split(/\s+/)[1], 10);
 }
 
-function parseCrFile(filePath, crid) {
-  console.log(`Processing CR file: ${filePath}`);
-  const content = fs.readFileSync(filePath, 'utf8');
-  const lines = content.split(/\r?\n/);
-  const pregRegion = /^REGION (-?\d+) (-?\d+)(?: (-?\d+))?$/;
-  const pregTagq = /^"(.*)";(.*)$/;
-  const pregTag = /^(.*);(.*)$/;
-  const pregBlock = /^([A-Z]+)\s*(.*)$/;
-  const pregUnit = /^EINHEIT (\d+)$/;
-  let region = null;
-  let unit = null;
-  let block = null;
-  let svgContent = '';
-  let bounds = { xmin: Infinity, ymin: Infinity, xmax: -Infinity, ymax: -Infinity };
-  let regions = [];
-  for (let line of lines) {
-    let tag = null, value = null;
-    let matches;
-    if ((matches = pregRegion.exec(line))) {
-      if (region) regions.push(region);
-      block = 'REGION';
-      region = parseRegion(line, matches);
-    } else if (region && (matches = pregUnit.exec(line))) {
-      block = 'UNIT';
-      // Parse unit and add to current region
-      region.units = region.units || [];
-      let id = matches[1];
-      unit = {
-        id: matches[1],
-        name: '???',
-        tags: []
-      };
-      region.units[id] = unit;
-      console.log(`Found unit ${unit.id} in region ${region.x}, ${region.y}`);
-    } else if ((matches = pregTagq.exec(line))) {
-      value = matches[1];
-      tag = matches[2];
-      // console.log(`Found tag ${tag} with value ${value} in block ${block}`);
-    } else if ((matches = pregTag.exec(line))) {
-      value = matches[1];
-      tag = matches[2];
-      // console.log(`Found tag ${tag} with value ${value} in block ${block}`);
-    } else if ((matches = pregBlock.exec(line))) {
-      block = matches[1];
-      console.log(`Found block ${block}`);
-    }
-
-    if (tag) {
-      if (block === "REGION" && region) {
-        region.tags[tag] = value;
-      } else if (block === "UNIT" && unit) {
-        unit.tags[tag] = value;
-        region.units[unit.id] = unit;
-      }
-      else if (block === "TALENTE" && region && unit) {
-        unit.skills = unit.skills || {};
-        unit.skills[tag] = parseSkill(value);
-        // region.units[unit.id] = unit;
-      }
-    }
-  }
-  if (region) regions.push(region);
-  // Output regions and units
-  for (const reg of regions) {
-    svgContent += outputRegion(reg, bounds, crid);
+// Report class encapsulating all regions and their units
+class Report {
+  constructor(crid, name, withDetails = true) {
+    this.crid = crid;
+    this.name = name || `Report ${crid}`;
+    this.tags = {};
+    this.owner = null;
+    this.regions = [];
+    this.factions = [];
+    this.withDetails = withDetails;
   }
 
-  svgContent = outputFront(bounds) + svgContent + outputBack();
+  addFaction(faction) {
+    this.factions.push(faction);
+    return faction;
+  }
 
-  return svgContent;
+  addRegion(region) {
+    this.regions.push(region);
+    return region;
+  }
+
+  addUnit(region, unit) {
+    region.units[unit.id] = unit;
+    return unit;
+  }
+
+  static parse(filePath, crid, name, withDetails = true, zFilter = 0) {
+    console.log(`Processing CR file: ${filePath}`);
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split(/\r?\n/);
+    const pregRegion = /^REGION (-?\d+) (-?\d+)(?: (-?\d+))?$/;
+    const pregTagq = /^"(.*)";(.*)$/;
+    const pregTag = /^(.*);(.*)$/;
+    const pregBlock = /^([A-Z]+)\s*(.*)$/;
+    const pregUnit = /^EINHEIT (\d+)$/;
+    const pregFaction = /^PARTEI (\d+)$/;
+
+    const report = new Report(crid, name, withDetails);
+    let block = 'ERESSEA';
+    let currentUnit = null, currentRegion = null, currentFaction = null;
+    for (let line of lines) {
+      let tag = null, value = null, matches;
+      if ((matches = pregFaction.exec(line))) {
+        block = 'FACTION';
+        currentRegion = null;
+        currentUnit = null;
+        currentFaction = report.addFaction(parseFaction(line, matches));
+        if (!report.owner) {
+          report.owner = currentFaction;
+        }
+        continue;
+      }
+      if ((matches = pregRegion.exec(line))) {
+        block = 'REGION';
+        currentFaction = null;
+        currentUnit = null;
+        const reg = parseRegion(line, matches);
+        console.log(`parsing region ${reg.id} with z=${reg.z}, needs to match ${zFilter}`);
+        if ((reg.z || 0) === (zFilter || 0)) {
+          currentRegion = report.addRegion(reg);
+        } else {
+          // Skip this region's subsequent UNIT/TAG blocks by keeping currentRegion null
+          currentRegion = null;
+        }
+        continue;
+      }
+
+      if (currentRegion && (matches = pregUnit.exec(line))) {
+        block = 'UNIT';
+        currentUnit = report.addUnit(currentRegion, parseUnit(line, matches));
+
+        continue;
+      }
+      if ((matches = pregTagq.exec(line))) {
+        value = matches[1]; tag = matches[2];
+      } else if ((matches = pregTag.exec(line))) {
+        value = matches[1]; tag = matches[2];
+      } else if ((matches = pregBlock.exec(line))) {
+        block = matches[1];
+        continue;
+      }
+      if (!tag) continue;
+      if (block === 'ERESSEA') {
+        report.tags[tag] = value;
+      } else if (block == 'FACTION' && currentFaction) {
+        currentFaction.tags[tag] = value;
+      } else if (block === 'REGION' && currentRegion) {
+        currentRegion.tags[tag] = value;
+      } else if (block === 'UNIT' && currentUnit && currentRegion) {
+        currentUnit.tags[tag] = value;
+        currentRegion.units[currentUnit.id] = currentUnit;
+      } else if (block === 'TALENTE' && currentUnit && currentRegion) {
+        currentUnit.skills = currentUnit.skills || {};
+        currentUnit.skills[tag] = parseSkill(value);
+      }
+    }
+    // Resolve unit factions (Partei tag) to actual faction objects & names
+    const factionIndexByNum = {};
+    for (const f of report.factions) factionIndexByNum[f.numid] = f;
+    for (const region of report.regions) {
+      for (const unit of Object.values(region.units)) {
+        if (unit.tags && unit.tags.Partei) {
+          const fid = parseInt(unit.tags.Partei, 10);
+          if (!isNaN(fid) && factionIndexByNum[fid]) {
+            unit.faction = factionIndexByNum[fid];
+            unit.factionName = factionIndexByNum[fid].tags.Parteiname || factionIndexByNum[fid].id;
+          }
+        }
+      }
+    }
+    return report;
+  }
+  computeBounds() {
+    const bounds = { xmin: Infinity, ymin: Infinity, xmax: -Infinity, ymax: -Infinity };
+    for (const r of this.regions) {
+      const x = transformx(r);
+      const y = transformy(r);
+      bounds.xmin = Math.min(bounds.xmin, x);
+      bounds.ymin = Math.min(bounds.ymin, y);
+      bounds.xmax = Math.max(bounds.xmax, x);
+      bounds.ymax = Math.max(bounds.ymax, y);
+    }
+    if (!isFinite(bounds.xmin)) { // empty safeguard
+      bounds.xmin = bounds.ymin = 0;
+      bounds.xmax = bounds.ymax = 100;
+    }
+    return bounds;
+  }
+  toSVG() {
+    const bounds = this.computeBounds();
+    let body = '';
+    const ownerFactionId = this.owner ? this.owner.id : null;
+    for (const r of this.regions) {
+      body += outputRegion(r, bounds, this.crid, this.withDetails, ownerFactionId);
+    }
+    return outputFront(bounds) + body + outputBack();
+  }
 }
 
 module.exports = function (eleventyConfig) {
-  eleventyConfig.addShortcode('crmap', function (file) {
+  // Usage examples (positional order: file, id, details, layer, caption):
+  //   {% crmap 'path/to/file.cr' %}                         -> auto numeric crid, details true, layer 0
+  //   {% crmap 'path/to/file.cr' 'map1' %}                  -> explicit crid
+  //   {% crmap 'path/to/file.cr' 'map1' false %}            -> explicit crid, no details (tooltips only)
+  //   {% crmap 'path/to/file.cr' 'map1' true 2 %}           -> explicit crid, details, layer z=2 (auto caption)
+  //   {% crmap 'path/to/file.cr' 'map1' true 2 'My Caption'%} -> custom caption
+  //   {% crmap 'path/to/file.cr' 'map1' true 2 false %}     -> omit caption entirely
+  //   {% crmap 'path/to/file.cr' '' true 1 %}               -> auto crid, details, layer z=1 (empty id)
+  // Object/options form (backwards compatible):
+  //   {% crmap 'path/to/file.cr' { crid: 'map1', details: false, z: 1, caption: 'Custom' } %}
+  //   {% crmap 'path/to/file.cr' { caption: false } %}      -> omit caption
+  // Notes:
+  //   - layer (z) defaults to 0; regions without z are treated as z=0.
+  //   - id (crid) must be lowercase a-z 0-9 _ - ; empty string means auto.
+  //   - details:false omits region/unit descriptions and links but keeps tooltips.
+  //   - caption: string for custom text; false to omit figcaption.
+  //   - Previous two-argument usage (file, optionsObject|stringId) still works.
+  // Optional detail containers (place anywhere after the map):
+  //   {% crmap_rdetails 'map1' %}    -> region details target div
+  //   {% crmap_udetails 'map1' %}    -> unit details target div
+  // Notes:
+  //   - crid must be lowercase a-z 0-9 _ -
+  //   - Duplicate custom crid returns an inline error.
+  //   - details:false omits region/unit descriptions and links but keeps tooltips.
+  eleventyConfig.addShortcode('crmap', function (file, idArg, detailsArg, layerArg, captionArg) {
     // file is relative to the project root or input dir
     try {
-      const crid = ++cridCounter;
-      console.log(`Processing CR file ${crid}: ${file}`);
+      let requestedCrid; // explicit id
+      let detailsOption = true; // default include details
+      let zOption = 0; // default layer 0
+      let captionOption; // undefined -> auto, string -> custom, false -> omit
+
+      // Backward compatibility: if idArg is a JSON-like options string or object, treat as options
+      if (idArg && typeof idArg === 'string' && idArg.trim().startsWith('{')) {
+        let raw = idArg.trim();
+        try {
+          const normalized = raw
+            .replace(/([,{]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+            .replace(/'/g, '"');
+          idArg = JSON.parse(normalized);
+        } catch (e) {
+          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Invalid options object: ${e.message}</div>`;
+        }
+      }
+      if (idArg && typeof idArg === 'object') {
+        requestedCrid = idArg.crid || idArg.id || '';
+        if (Object.prototype.hasOwnProperty.call(idArg, 'details')) {
+          detailsOption = idArg.details !== false;
+        }
+        if (Object.prototype.hasOwnProperty.call(idArg, 'z')) {
+          const zv = idArg.z;
+          if (/^-?\d+$/.test(zv.toString())) zOption = parseInt(zv, 10);
+        }
+        if (Object.prototype.hasOwnProperty.call(idArg, 'caption')) {
+          const c = idArg.caption;
+          if (c === false) captionOption = false; else if (typeof c === 'string') captionOption = c;
+        }
+      } else {
+        // Positional parsing: file, id, details, layer
+        if (typeof idArg === 'string') {
+          requestedCrid = idArg; // may be '' meaning auto
+        } else if (idArg === false) {
+          detailsOption = false;
+        }
+        // details argument
+        if (typeof detailsArg !== 'undefined') {
+          if (detailsArg === false || detailsArg === 'false') detailsOption = false;
+          else if (detailsArg === true || detailsArg === 'true') detailsOption = true;
+          else if (typeof detailsArg === 'number') {
+            // If number given in details slot, treat as layer when layerArg missing
+            zOption = parseInt(detailsArg, 10) || 0;
+          } else if (typeof detailsArg === 'string' && !/^-?\d+$/.test(detailsArg) && detailsArg !== 'true' && detailsArg !== 'false') {
+            // Treat as caption if a free-form string
+            captionOption = detailsArg;
+          }
+        }
+        // layer argument
+        if (typeof layerArg !== 'undefined') {
+          if (/^-?\d+$/.test(layerArg.toString())) zOption = parseInt(layerArg, 10);
+          else if (layerArg === false) captionOption = false;
+          else if (typeof layerArg === 'string') captionOption = layerArg;
+        }
+        // explicit caption fifth param
+        if (typeof captionArg !== 'undefined') {
+          if (captionArg === false) captionOption = false;
+          else if (typeof captionArg === 'string') captionOption = captionArg;
+        }
+      }
+      if (requestedCrid === '') {
+        requestedCrid = undefined; // force auto
+      }
+
+      let crid;
+      if (requestedCrid) {
+        crid = requestedCrid.toString();
+        const valid = validateCrid(crid);
+        if (!valid.ok) {
+          console.warn(valid.message);
+          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${valid.message}</div>`;
+        }
+        if (crids.includes(crid)) {
+          const owner = cridOwners[crid];
+          const current = this && this.page ? this.page.inputPath : 'unknown';
+          if (owner && owner !== current) {
+            const msg = `Duplicate crid '${crid}' already used by ${owner} (current: ${current})`;
+            console.warn(msg);
+            return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${msg}</div>`;
+          }
+          // Same template rebuilding: allow silently
+        }
+        console.log(`Processing CR file with provided crid=${crid}: ${file}`);
+      } else {
+        crid = (++cridCounter).toString();
+        console.log(`Processing CR file ${crid}: ${file}`);
+      }
+      if (!crids.includes(crid)) crids.push(crid);
+      if (this && this.page) {
+        cridOwners[crid] = this.page.inputPath;
+      }
       const filePath = path.resolve(process.cwd(), file);
       if (!fs.existsSync(filePath)) {
         console.log(`File not found: ${filePath}`);
         return `<div style="max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;">File not found: ${file}</div>`;
       }
-      const svg = parseCrFile(filePath, crid);
-
-      crids.push(crid);
+      const reportName = path.basename(filePath, path.extname(filePath));
+      const report = Report.parse(filePath, crid, reportName, detailsOption, zOption);
+      const svg = report.toSVG();
+      let caption = '';
+      if (captionOption === false) {
+        caption = null;
+      } else if (typeof captionOption === 'string') {
+        caption = captionOption;
+      } else {
+        caption = report.name + report.tags.Runde + (report.owner ? `, ${report.owner.tags.Parteiname} (${report.owner.id})` : '');
+      }
 
       return `<script>window.crids = ${JSON.stringify(crids)};<\/script>\n` +
-        `<div style="max-width:100%; max-height:600px; overflow:auto;">${svg}</div>\n` +
-        `<div id="tooltip_${crid}" display="none" style="position: fixed; display: none; left: 293px; top: 527px;">Ozean (30, 1)</div>` +
-        `<div id="rdetails_${crid}" onload="initDiv(this);">You need to enable Javascript for this to work.</div>\n` +
-        `<div id="udetails_${crid}">You need to enable Javascript for this to work.</div>`;
+        `<figure class=\"cr-report\" data-crid=\"${crid}\">` +
+        `<div class=\"cr-svg-wrapper\" style=\"max-width:100%; max-height:600px; overflow:auto; position:relative;\">${svg}</div>` +
+        (caption ? `<figcaption class=\"cr-caption\">${caption}</figcaption>` : '') +
+        `<div id=\"tooltip_${crid}\" class=\"cr-tooltip\" style=\"display:none; position:fixed; pointer-events:none; background:rgba(30,30,30,0.85); color:#fff; padding:2px 6px; border-radius:4px; font:12px/1.2 monospace; z-index:9999;\"></div>` +
+        `</figure>`;
     } catch (e) {
       console.log(`Error processing file: ${filePath} `);
       return `< div style = "max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;" > Error: ${e.message}</div > `;
     }
+  });
+
+  // Shortcode to output region details container for a given crid
+  eleventyConfig.addShortcode('crmap_rdetails', function (crid) {
+    if (!crid) return '<div class="cr-error" style="color:#a00">crmap_rdetails: missing crid</div>';
+    const v = validateCrid(crid.toString());
+    if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
+    if (!crids.includes(crid.toString())) {
+      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
+    }
+    return `<div id=\"rdetails_${crid}\" class=\"cr-region-details\">Select a region.</div>`;
+  });
+
+  // Shortcode to output unit details container for a given crid
+  eleventyConfig.addShortcode('crmap_udetails', function (crid) {
+    if (!crid) return '<div class="cr-error" style="color:#a00">crmap_udetails: missing crid</div>';
+    const v = validateCrid(crid.toString());
+    if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
+    if (!crids.includes(crid.toString())) {
+      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
+    }
+    return `<div id=\"udetails_${crid}\" class=\"cr-unit-details\">Select a unit.</div>`;
   });
 
   eleventyConfig.addPassthroughCopy("crs/crs-passthrough.js");
