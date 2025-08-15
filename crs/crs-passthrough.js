@@ -9,22 +9,36 @@ function showDescription(event, div_id, id) {
   return false;
 }
 
-function positionTooltip(event) {
-  const tooltip = document.getElementById('tooltip');
-  const x = event.clientX;
-  const y = event.clientY;
+function showTooltip(event, id, text) {
+  const tooltip = document.getElementById(id);
+  tooltip.style.display = 'block';
+  tooltip.innerHTML = text;
+  tooltip.style.display = 'block';
+  const x = event.clientX + 10;
+  const y = event.clientY - 10;
   tooltip.style.left = `${x}px`;
   tooltip.style.top = `${y}px`;
 }
 
-function showTooltip(event, text) {
-  const tooltip = document.getElementById('tooltip');
-  tooltip.innerHTML = text;
-  tooltip.style.display = 'block';
-  positionTooltip(event);
-}
-
-function hideTooltip() {
-  const tooltip = document.getElementById('tooltip');
+function hideTooltip(id) {
+  const tooltip = document.getElementById(id);
   tooltip.style.display = 'none';
 }
+
+function initDiv(element) {
+
+  if (element.id === 'rdetails') {
+    element.innerHTML = 'Select a region to see details here.';
+  }
+}
+
+// document.addEventListener('DOMContentLoaded', function () {
+//   const rdetails = document.getElementById('rdetails');
+//   const udetails = document.getElementById('udetails');
+//   if (rdetails) {
+//     rdetails.innerHTML = 'Select a region to see details here.';
+//   }
+//   if (udetails) {
+//     udetails.innerHTML = 'Select a unit to see details here.';
+//   }
+// });

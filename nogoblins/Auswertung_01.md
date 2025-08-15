@@ -12,4 +12,8 @@ Map:
 No Map
 {% crmap './nogoblins/crs/334-424242.cr' %}
 
+Another Map:
+{% crmap './nogoblins/crs/334-42.cr' %}
+
+
 Lore ipsum 1... 

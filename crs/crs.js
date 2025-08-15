@@ -1,5 +1,4 @@
 // crs.js
-
 const fs = require('fs');
 const path = require('path');
 
@@ -43,7 +42,8 @@ const images = {
 
 const defaultImage = 'region';
 
-
+let crids = [];
+let cridCounter = 0;
 
 function getColor(terrain) {
   return colors[terrain] || colors['default'];
@@ -74,7 +74,7 @@ function parseRegion(line, matches) {
   return region;
 }
 
-function outputRegion(region, bounds) {
+function outputRegion(region, bounds, crid) {
   if (!region) return '';
   if (!region.tags.Terrain) return '';
   let color = getColor(region.tags.Terrain);
@@ -92,7 +92,7 @@ function outputRegion(region, bounds) {
   let tt = region.tags.Name ? region.tags.Name : region.tags.Terrain;
   tt += ` (${xx}, ${yy})`;
   let desc = '';
-  console.log('tags ', region.tags);
+  // console.log('tags ', region.tags);
 
 
   desc = Object.entries(region.tags)
@@ -102,6 +102,7 @@ function outputRegion(region, bounds) {
   let id = 'r_';
   id += xx < 0 ? `m${-xx}` : xx;
   id += yy < 0 ? `_m${-yy}` : `_${yy}`;
+  id += `_${crid}`;
   // Update bounds
   bounds.xmin = Math.min(bounds.xmin, x);
   bounds.ymin = Math.min(bounds.ymin, y);
@@ -113,10 +114,10 @@ function outputRegion(region, bounds) {
   if (region.units.length > 0) {
     desc += `<b>Units:</b><br>`;
     Object.entries(region.units).forEach(([id, unit]) => {
-      console.log(`Unit ${id} skills:`, unit.skills);
-      const uid = `u_${unit.id}`;
+      // console.log(`Unit ${id} skills:`, unit.skills);
+      const uid = `u_${unit.id}_${crid}`;
       udesc += `<desc id="${uid}"><div></div><div>`;
-      desc += `<a href="#${uid}" onclick="showDescription(event, 'udetails', '${uid}');">${unit.tags.Name} (${unit.id})</a><br>`;
+      desc += `<a href="#${uid}" onclick="showDescription(event, 'udetails_${crid}', '${uid}');">${unit.tags.Name} (${unit.id})</a><br>`;
       udesc += `${unit.tags.Name} (${unit.id})`;
       if (unit.skills) {
         udesc += ' ' + Object.entries(unit.skills).map(([key, value]) => `${key} ${value}`).join(', ');
@@ -134,7 +135,7 @@ function outputRegion(region, bounds) {
   // onmousemove="showTooltip(evt, '${tt}');"
   // onmouseout="hideTooltip();"
   // onclick = "showDescription(event, '${desc}');" 
-  return `<a href="#${id}" onclick = "showDescription(event, 'rdetails', '${id}');"  >` +
+  return `<a href="#${id}" onmousemove="showTooltip(evt, 'tooltip_${crid}', '${tt}');" onmouseout="hideTooltip('tooltip_${crid}');" onclick = "showDescription(event, 'rdetails_${crid}', '${id}');"  >` +
     `<use xlink:href="#${tag}" id="${id}" x="${x}" y="${y}" ${color}><title>${tt}</title><desc>${desc}</desc></use>\n` +
     units + `</a>`;
 
@@ -192,7 +193,7 @@ function parseSkill(key) {
   return parseInt(key.trim().split(/\s+/)[1], 10);
 }
 
-function parseCrFile(filePath) {
+function parseCrFile(filePath, crid) {
   console.log(`Processing CR file: ${filePath}`);
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split(/\r?\n/);
@@ -229,11 +230,11 @@ function parseCrFile(filePath) {
     } else if ((matches = pregTagq.exec(line))) {
       value = matches[1];
       tag = matches[2];
-      console.log(`Found tag ${tag} with value ${value} in block ${block}`);
+      // console.log(`Found tag ${tag} with value ${value} in block ${block}`);
     } else if ((matches = pregTag.exec(line))) {
       value = matches[1];
       tag = matches[2];
-      console.log(`Found tag ${tag} with value ${value} in block ${block}`);
+      // console.log(`Found tag ${tag} with value ${value} in block ${block}`);
     } else if ((matches = pregBlock.exec(line))) {
       block = matches[1];
       console.log(`Found block ${block}`);
@@ -256,24 +257,11 @@ function parseCrFile(filePath) {
   if (region) regions.push(region);
   // Output regions and units
   for (const reg of regions) {
-    svgContent += outputRegion(reg, bounds);
+    svgContent += outputRegion(reg, bounds, crid);
   }
-  // // Output units as icons on top of regions
-  // for (const reg of regions) {
-  //   if (reg.units && reg.units.length > 0) {
-  //     console.log(`Outputting units for region: ${reg.Name}`);
-  //     const x = transformx(reg);
-  //     const y = transformy(reg);
-  //     let ux = x + 50; // offset to center of hex
-  //     let uy = y + 50;
 
-  //     for (const unit of reg.units.filter(Boolean)) {
-  //       console.log(`Outputting unit for region ${reg.Name}: ${unit.name} [${unit.num}]`);
-  //     }
-  //   }
-  // }
   svgContent = outputFront(bounds) + svgContent + outputBack();
-  // console.log(`returning ${svgContent}`);
+
   return svgContent;
 }
 
@@ -281,16 +269,22 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addShortcode('crmap', function (file) {
     // file is relative to the project root or input dir
     try {
-      console.log(`Processing CR file: ${file}`);
+      const crid = ++cridCounter;
+      console.log(`Processing CR file ${crid}: ${file}`);
       const filePath = path.resolve(process.cwd(), file);
       if (!fs.existsSync(filePath)) {
         console.log(`File not found: ${filePath}`);
         return `<div style="max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;">File not found: ${file}</div>`;
       }
-      const svg = parseCrFile(filePath);
-      return `<div style="max-width:100%; max-height:600px; overflow:auto;">${svg}</div>\n` +
-        `<div id="rdetails">You need to enable Javascript for this to work.</div>\n` +
-        `<div id="udetails">You need to enable Javascript for this to work.</div>`;
+      const svg = parseCrFile(filePath, crid);
+
+      crids.push(crid);
+
+      return `<script>window.crids = ${JSON.stringify(crids)};<\/script>\n` +
+        `<div style="max-width:100%; max-height:600px; overflow:auto;">${svg}</div>\n` +
+        `<div id="tooltip_${crid}" display="none" style="position: fixed; display: none; left: 293px; top: 527px;">Ozean (30, 1)</div>` +
+        `<div id="rdetails_${crid}" onload="initDiv(this);">You need to enable Javascript for this to work.</div>\n` +
+        `<div id="udetails_${crid}">You need to enable Javascript for this to work.</div>`;
     } catch (e) {
       console.log(`Error processing file: ${filePath} `);
       return `< div style = "max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;" > Error: ${e.message}</div > `;
