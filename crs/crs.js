@@ -98,7 +98,7 @@ function parseRegion(line, matches) {
 
 function parseUnit(line, matches) {
   const parts = line.trim().split(/\s+/);
-  const unit = { id: itoa36(parseInt(matches[1], 10)), name: '???', tags: {}, skills: {} };
+  const unit = { id: itoa36(parseInt(matches[1], 10)), name: '???', tags: {}, skills: {}, items: {}, commands: [] };
   console.log("found unit ", unit);
 
   return unit;
@@ -152,7 +152,9 @@ function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
         factionName: unit.factionName || null,
         isOwner: ownerFactionId && unit.faction && unit.faction.id === ownerFactionId ? true : false,
         tags: unit.tags,
-        skills: unit.skills || {}
+        skills: unit.skills || {},
+        items: unit.items || {},
+        commands: unit.commands || []
       };
     });
     // Keep a single <use> for units icon location (optional)
@@ -222,6 +224,10 @@ function parseSkill(key) {
   return parseInt(key.trim().split(/\s+/)[1], 10);
 }
 
+function parseItem(key) {
+  return parseInt(key.trim(), 10);
+}
+
 // Report class encapsulating all regions and their units
 class Report {
   constructor(crid, name, withDetails = true) {
@@ -257,6 +263,7 @@ class Report {
     const pregTagq = /^"(.*)";(.*)$/;
     const pregTag = /^(.*);(.*)$/;
     const pregBlock = /^([A-Z]+)\s*(.*)$/;
+    const pregQString = /^"(.*)"$/;
     const pregUnit = /^EINHEIT (\d+)$/;
     const pregFaction = /^PARTEI (\d+)$/;
 
@@ -296,7 +303,10 @@ class Report {
 
         continue;
       }
-      if ((matches = pregTagq.exec(line))) {
+      if ((matches = pregQString.exec(line))) {
+        tag = true;
+        value = matches[1];
+      } else if ((matches = pregTagq.exec(line))) {
         value = matches[1]; tag = matches[2];
       } else if ((matches = pregTag.exec(line))) {
         value = matches[1]; tag = matches[2];
@@ -314,11 +324,24 @@ class Report {
       } else if (block === 'UNIT' && currentUnit && currentRegion) {
         currentUnit.tags[tag] = value;
         currentRegion.units[currentUnit.id] = currentUnit;
-      } else if (block === 'TALENTE' && currentUnit && currentRegion) {
+      } else if (block === 'TALENTE' && currentUnit) {
         currentUnit.skills = currentUnit.skills || {};
         currentUnit.skills[tag] = parseSkill(value);
+      } else if (block === 'GEGENSTAENDE' && currentUnit) {
+        currentUnit.items = currentUnit.items || {};
+        currentUnit.items[tag] = parseItem(value);
+      } else if (block === 'COMMANDS' && currentUnit) {
+        currentUnit.commands = currentUnit.commands || [];
+        // Remove surrounding quotes if present
+        let cmd = value;
+        if (cmd.length > 1 && ((cmd.startsWith('"') && cmd.endsWith('"')) || (cmd.startsWith("'") && cmd.endsWith("'")))) {
+          cmd = cmd.slice(1, -1);
+        }
+        currentUnit.commands.push(cmd);
       }
     }
+
+
     // Resolve unit factions (Partei tag) to actual faction objects & names
     const factionIndexByNum = {};
     for (const f of report.factions) factionIndexByNum[f.numid] = f;
@@ -383,6 +406,7 @@ module.exports = function (eleventyConfig) {
   // Optional detail containers (place anywhere after the map):
   //   {% crmap_rdetails 'map1' %}    -> region details target div
   //   {% crmap_udetails 'map1' %}    -> unit details target div
+  //   {% crmap_commands 'map1' %}    -> unit commands target div
   // Notes:
   //   - crid must be lowercase a-z 0-9 _ -
   //   - Duplicate custom crid returns an inline error.
@@ -496,7 +520,7 @@ module.exports = function (eleventyConfig) {
       } else if (typeof captionOption === 'string') {
         caption = captionOption;
       } else {
-        caption = report.name + report.tags.Runde + (report.owner ? `, ${report.owner.tags.Parteiname} (${report.owner.id})` : '');
+        caption = report.name + (report.owner ? `, ${report.owner.tags.Parteiname} (${report.owner.id})` : '');
       }
 
       return `<script>window.crids = ${JSON.stringify(crids)};<\/script>\n` +
@@ -531,6 +555,17 @@ module.exports = function (eleventyConfig) {
       return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
     }
     return `<div id=\"udetails_${crid}\" class=\"cr-unit-details\">Select a unit.</div>`;
+  });
+
+  // Shortcode to output unit commands container for a given crid
+  eleventyConfig.addShortcode('crmap_commands', function (crid) {
+    if (!crid) return '<div class="cr-error" style="color:#a00">crmap_commands: missing crid</div>';
+    const v = validateCrid(crid.toString());
+    if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
+    if (!crids.includes(crid.toString())) {
+      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
+    }
+    return `<div id=\"ucommands_${crid}\" class=\"cr-unit-commands\">Select a unit for commands.</div>`;
   });
 
   eleventyConfig.addPassthroughCopy("crs/crs-passthrough.js");
