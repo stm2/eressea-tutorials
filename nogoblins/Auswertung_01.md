@@ -6,7 +6,7 @@ date: 2024-03-17
 # Runde 1
 ## Die Auswertung
 
-Some examples to demostrate the crmap shortcode.
+Some examples to demonstrate the crmap shortcode.
 
 Map only:
 {% crmap './nogoblins/crs/334-42.cr' '{ crid: "map1", details: false }' %}

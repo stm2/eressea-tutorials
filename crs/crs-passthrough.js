@@ -147,23 +147,8 @@ function hideTooltip(id) {
   tooltip.style.display = 'none';
 }
 
-function initDiv(element) {
-
-  if (element.id === 'rdetails') {
-    element.innerHTML = 'Select a region to see details here.';
-  }
-}
-
-// document.addEventListener('DOMContentLoaded', function () {
-//   const rdetails = document.getElementById('rdetails');
-//   const udetails = document.getElementById('udetails');
-//   if (rdetails) {
-//     rdetails.innerHTML = 'Select a region to see details here.';
-//   }
-//   if (udetails) {
-//     udetails.innerHTML = 'Select a unit to see details here.';
-//   }
-// });
+// TODO: Accessibility: add keyboard listeners (Enter/Space) for .cr-region-link and .cr-unit-link
+// and ARIA roles (button/list/listitem) in a subsequent enhancement.
 
 (function initCRMapBindings() {
   if (window.__crMapBound) return; // avoid rebinding on partial reloads

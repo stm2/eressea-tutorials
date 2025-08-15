@@ -42,6 +42,19 @@ const images = {
 
 const defaultImage = 'region';
 
+// Debug flag (enable with environment variable CRS_DEBUG=1)
+const DEBUG = process.env.CRS_DEBUG === '1';
+function debug(...args) { if (DEBUG) console.log('[crs]', ...args); }
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let crids = [];
 let cridCounter = 0;
 let cridOwners = {}; // crid -> template inputPath
@@ -79,7 +92,7 @@ function parseFaction(line, matches) {
   const parts = line.trim().split(/\s+/);
   const numid = parseInt(matches[1], 10);
   const faction = { id: itoa36(numid), numid, tags: {} };
-  console.log("found faction ", faction);
+  debug("found faction", faction);
 
   return faction;
 }
@@ -91,7 +104,7 @@ function parseRegion(line, matches) {
   region.x = parseInt(matches[1], 10);
   region.y = parseInt(matches[2], 10);
   if (matches[3]) region.z = parseInt(matches[3], 10); else region.z = 0;
-  console.log("found region ", region);
+  debug("found region", region);
 
   return region;
 }
@@ -99,7 +112,7 @@ function parseRegion(line, matches) {
 function parseUnit(line, matches) {
   const parts = line.trim().split(/\s+/);
   const unit = { id: itoa36(parseInt(matches[1], 10)), name: '???', tags: {}, skills: {}, items: {}, commands: [] };
-  console.log("found unit ", unit);
+  debug("found unit", unit);
 
   return unit;
 }
@@ -121,9 +134,6 @@ function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
   const y = transformy(region);
   let tt = region.tags.Name ? region.tags.Name : region.tags.Terrain;
   tt += ` (${xx}, ${yy})`;
-  // We no longer build HTML inside <desc>; we will store JSON in data-* attributes.
-  // console.log('tags ', region.tags);
-
 
   // Prepare JSON payloads
   let regionData = {};
@@ -135,12 +145,12 @@ function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
   id += xx < 0 ? `m${-xx}` : xx;
   id += yy < 0 ? `_m${-yy}` : `_${yy}`;
   id += `_${crid}`;
-  // Update bounds
+
   bounds.xmin = Math.min(bounds.xmin, x);
   bounds.ymin = Math.min(bounds.ymin, y);
   bounds.xmax = Math.max(bounds.xmax, x);
   bounds.ymax = Math.max(bounds.ymax, y);
-  // console.log(region.units);
+
   let unitsMarkup = '';
   let unitsData = [];
   if (withDetails && Object.keys(region.units).length > 0) {
@@ -157,7 +167,7 @@ function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
         commands: unit.commands || []
       };
     });
-    // Keep a single <use> for units icon location (optional)
+    // Keep a single <use> for units icon location
     unitsMarkup = `<use xlink:href="#units" x="${x}" y="${y}" data-units="${encodeURIComponent(JSON.stringify(unitsData))}"></use>`;
   }
 
@@ -178,8 +188,6 @@ function includeImage(image) {
     contents = match ? match[1] : contents;
     return `    <g id='${image}'>${contents}    </g>`;
   } else {
-    // Optionally log a warning or just skip
-    // console.warn(`Warning: Image not found: ${imgPath}`);
     return `    <g id='${image}'><polygon points="50 0,100 25,100 75,50 100,0 75,0 25" stroke="yellow" stroke-width="1" fill="grey" /></g>\n`;
   }
 }
@@ -198,10 +206,7 @@ function outputFront(bounds) {
     `    <g id='region'>\n` +
     `      <polygon points="50 0,100 25,100 75,50 100,0 75,0 25" stroke="black" stroke-width="1" />\n` +
     `    </g>\n`;
-  // Include all terrain images
-  console.log(`Including terrain images...`);
   for (const terrain in images) {
-    console.log(`Including terrain: ${terrain}`);
     if (Object.prototype.hasOwnProperty.call(images, terrain)) {
       svg += includeImage(images[terrain]);
     }
@@ -251,7 +256,7 @@ class Report {
   }
 
   static parse(filePath, crid, name, withDetails = true, zFilter = 0) {
-    console.log(`Processing CR file: ${filePath}`);
+    debug(`Processing CR file: ${filePath}`);
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split(/\r?\n/);
     const pregRegion = /^REGION (-?\d+) (-?\d+)(?: (-?\d+))?$/;
@@ -282,7 +287,7 @@ class Report {
         currentFaction = null;
         currentUnit = null;
         const reg = parseRegion(line, matches);
-        console.log(`parsing region ${reg.id} with z=${reg.z}, needs to match ${zFilter}`);
+        debug(`parsing region ${reg.id} with z=${reg.z}, needs to match ${zFilter}`);
         if ((reg.z || 0) === (zFilter || 0)) {
           currentRegion = report.addRegion(reg);
         } else {
@@ -407,7 +412,6 @@ module.exports = function (eleventyConfig) {
   //   - Duplicate custom crid returns an inline error.
   //   - details:false omits region/unit descriptions and links but keeps tooltips.
   eleventyConfig.addShortcode('crmap', function (file, idArg, detailsArg, layerArg, captionArg) {
-    // file is relative to the project root or input dir
     try {
       let requestedCrid; // explicit id
       let detailsOption = true; // default include details
@@ -492,10 +496,10 @@ module.exports = function (eleventyConfig) {
           }
           // Same template rebuilding: allow silently
         }
-        console.log(`Processing CR file with provided crid=${crid}: ${file}`);
+        debug(`Processing CR file with provided crid=${crid}: ${file}`);
       } else {
         crid = (++cridCounter).toString();
-        console.log(`Processing CR file ${crid}: ${file}`);
+        debug(`Processing CR file ${crid}: ${file}`);
       }
       if (!crids.includes(crid)) crids.push(crid);
       if (this && this.page) {
@@ -503,8 +507,8 @@ module.exports = function (eleventyConfig) {
       }
       const filePath = path.resolve(process.cwd(), file);
       if (!fs.existsSync(filePath)) {
-        console.log(`File not found: ${filePath}`);
-        return `<div style="max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;">File not found: ${file}</div>`;
+        debug(`File not found: ${filePath}`);
+        return `<div style=\"max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;\">File not found: ${escapeHtml(file)}</div>`;
       }
       const reportName = path.basename(filePath, path.extname(filePath));
       const report = Report.parse(filePath, crid, reportName, detailsOption, zOption);
@@ -513,20 +517,20 @@ module.exports = function (eleventyConfig) {
       if (captionOption === false) {
         caption = null;
       } else if (typeof captionOption === 'string') {
-        caption = captionOption;
+        caption = captionOption; // keep raw for now, escape when injecting
       } else {
         caption = report.name + (report.owner ? `, ${report.owner.tags.Parteiname} (${report.owner.id})` : '');
       }
 
       return `<script>window.crids = ${JSON.stringify(crids)};<\/script>\n` +
         `<figure class=\"cr-report\" data-crid=\"${crid}\">` +
-        `<div class=\"cr-svg-wrapper\" style=\"max-width:100%; max-height:600px; overflow:auto; position:relative;\">${svg}</div>` +
-        (caption ? `<figcaption class=\"cr-caption\">${caption}</figcaption>` : '') +
-        `<div id=\"tooltip_${crid}\" class=\"cr-tooltip\" style=\"display:none; position:fixed; pointer-events:none; background:rgba(30,30,30,0.85); color:#fff; padding:2px 6px; border-radius:4px; font:12px/1.2 monospace; z-index:9999;\"></div>` +
+        `<div class=\"cr-svg-wrapper\">${svg}</div>` +
+        (caption ? `<figcaption class=\"cr-caption\">${escapeHtml(caption)}</figcaption>` : '') +
+        `<div id=\"tooltip_${crid}\" class=\"cr-tooltip\"></div>` +
         `</figure>`;
     } catch (e) {
-      console.log(`Error processing file: ${filePath} `);
-      return `< div style = "max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;" > Error: ${e.message}</div > `;
+      debug(`Error processing file: ${filePath} `, e);
+      return `<div style=\"max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;\">Error: ${escapeHtml(e.message)}</div>`;
     }
   });
 
