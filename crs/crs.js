@@ -161,17 +161,12 @@ function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
     unitsMarkup = `<use xlink:href="#units" x="${x}" y="${y}" data-units="${encodeURIComponent(JSON.stringify(unitsData))}"></use>`;
   }
 
-  // onmousemove="showTooltip(evt, '${tt}');"
-  // onmouseout="hideTooltip();"
-  // onclick = "showDescription(event, '${desc}');" 
-  const regionDataAttr = withDetails ? ` data-region="${encodeURIComponent(JSON.stringify(regionData))}"` : '';
-  const clickHandler = withDetails ? ` onclick="showDescription(event, 'rdetails_${crid}', '${id}');"` : '';
-  return `<a href="#${id}" onmousemove="showTooltip(evt, 'tooltip_${crid}', '${tt}');" onmouseout="hideTooltip('tooltip_${crid}');"${clickHandler}>` +
-    `<use xlink:href="#${tag}" id="${id}" x="${x}" y="${y}" ${color}${regionDataAttr} data-crid="${crid}"><title>${tt}</title></use>\n` +
+  const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const regionDataAttr2 = withDetails ? ` data-region="${encodeURIComponent(JSON.stringify(regionData))}" data-region-target="rdetails_${crid}" data-region-id="${id}"` : '';
+  return `<a href="#${id}" class="cr-region-link" data-tooltip-id="tooltip_${crid}" data-tooltip="${escAttr(tt)}" data-crid="${crid}"${regionDataAttr2}>` +
+    `<use xlink:href="#${tag}" id="${id}" x="${x}" y="${y}" ${color} data-crid="${crid}"><title>${tt}</title></use>\n` +
     unitsMarkup + `</a>`;
-
 }
-
 
 function includeImage(image) {
   // Looks for images/<image>.svg and includes its content as a <g id='image'>...</g>

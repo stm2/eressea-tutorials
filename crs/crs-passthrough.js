@@ -22,7 +22,9 @@ function showDescription(event, div_id, id, unitId) {
   const regionUse = document.getElementById(id);
   if (!regionUse) return false;
 
-  const regionDataAttr = regionUse.getAttribute('data-region');
+  // region data attributes are stored on the wrapping <a class="cr-region-link">, not the <use> itself
+  const regionLinkEl = regionUse.closest('.cr-region-link') || regionUse;
+  const regionDataAttr = regionLinkEl.getAttribute('data-region');
   let html = '';
   let units = [];
   if (regionDataAttr) {
@@ -92,7 +94,7 @@ function showDescription(event, div_id, id, unitId) {
     html += '<div class="unit_block"><b>Units:</b><ul>';
     for (const u of units) {
       const cls = u.isOwner ? 'owner-unit' : 'other-unit';
-      html += `<li class="${cls}" data-unit-id="${u.id}" onclick="showDescription(event,'${div_id}','${id}','${u.id}')">` + unitShort(u) + '</li>';
+      html += `<li class="${cls} cr-unit-link" data-unit-id="${u.id}" data-region-id="${id}" data-region-target="${div_id}">` + unitShort(u) + '</li>';
     }
     html += '</ul></div>';
   }
@@ -135,3 +137,38 @@ function initDiv(element) {
 //     udetails.innerHTML = 'Select a unit to see details here.';
 //   }
 // });
+
+(function initCRMapBindings() {
+  if (window.__crMapBound) return; // avoid rebinding on partial reloads
+  window.__crMapBound = true;
+  document.addEventListener('mousemove', function (e) {
+    const target = e.target.closest('.cr-region-link');
+    if (target && target.dataset.tooltipId && target.dataset.tooltip) {
+      showTooltip(e, target.dataset.tooltipId, target.dataset.tooltip);
+    }
+  }, true);
+  document.addEventListener('mouseout', function (e) {
+    const rel = e.relatedTarget;
+    if (!e.currentTarget) return;
+    const link = e.target.closest('.cr-region-link');
+    if (link && (!rel || !rel.closest('.cr-region-link')) && link.dataset.tooltipId) {
+      hideTooltip(link.dataset.tooltipId);
+    }
+  }, true);
+  document.addEventListener('click', function (e) {
+    const regionLink = e.target.closest('.cr-region-link');
+    if (regionLink && regionLink.dataset.regionId && regionLink.dataset.regionTarget) {
+      showDescription(e, regionLink.dataset.regionTarget, regionLink.dataset.regionId);
+      e.preventDefault();
+      return;
+    }
+    const unitLink = e.target.closest('.cr-unit-link');
+    if (unitLink) {
+      const regionId = unitLink.dataset.regionId;
+      const rtarget = unitLink.dataset.regionTarget;
+      const uid = unitLink.dataset.unitId;
+      showDescription(e, rtarget, regionId, uid);
+      e.preventDefault();
+    }
+  });
+})();
