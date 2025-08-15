@@ -1,101 +1,130 @@
+// === Helpers ==============================================================
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function unitShort(unit) {
-  let uhtml = `<b>${unit.name} (${unit.id})</b>` + (unit.factionName ? `, <span class="faction">${unit.factionName} (${unit.faction})</span>` : '');
+  let uhtml = `<b>${escapeHtml(unit.name)} (${escapeHtml(unit.id)})</b>` + (unit.factionName ? `, <span class="faction">${escapeHtml(unit.factionName)} (${escapeHtml(unit.faction)})</span>` : '');
   if (unit.tags && unit.tags.Anzahl) {
-    uhtml += `, ${unit.tags.Anzahl}`;
+    uhtml += `, ${escapeHtml(unit.tags.Anzahl)}`;
   }
   if (unit.tags && unit.tags.Typ) {
-    uhtml += ` ${unit.tags.Typ}`;
+    uhtml += ` ${escapeHtml(unit.tags.Typ)}`;
   }
   return uhtml;
 }
 
-function unitSkills(unit) {
-  if (!unit.skills || Object.keys(unit.skills).length === 0) return '';
-  return '<span class="skills">' + Object.entries(unit.skills).map(([sk, val]) => `${sk} ${val}`).join(', ') + '</span>';
+function parseRegionData(regionUse) {
+  const link = regionUse.closest('.cr-region-link') || regionUse;
+  if (!link) return null;
+  if (link._crRegionData) return link._crRegionData; // cache
+  const attr = link.getAttribute('data-region');
+  if (!attr) return null;
+  try {
+    link._crRegionData = JSON.parse(decodeURIComponent(attr));
+    return link._crRegionData;
+  } catch (e) {
+    link._crRegionDataError = e;
+    return null;
+  }
 }
 
-function showDescription(event, div_id, id, unitId) {
+function parseUnitsData(regionUse) {
+  const parent = regionUse.parentNode;
+  if (!parent) return [];
+  const unitsUse = parent.querySelector('use[data-units]');
+  if (!unitsUse) return [];
+  if (unitsUse._crUnitsData) return unitsUse._crUnitsData;
+  const attr = unitsUse.getAttribute('data-units');
+  if (!attr) return [];
+  try {
+    unitsUse._crUnitsData = JSON.parse(decodeURIComponent(attr));
+    return unitsUse._crUnitsData;
+  } catch (e) {
+    unitsUse._crUnitsDataError = e;
+    return [];
+  }
+}
+
+function buildRegionHtml(regionData) {
+  if (!regionData || !regionData.tags) return '';
+  let html = `<b>${escapeHtml(regionData.tags.Terrain || '')} ${escapeHtml(regionData.tags.Name || '')}</b> (${escapeHtml(regionData.x)}, ${escapeHtml(regionData.y)})`;
+  const entries = Object.entries(regionData.tags).filter(([k]) => !['Name', 'id', 'Terrain'].includes(k));
+  if (entries.length) {
+    html += '<div class="region_tags">' + entries.map(([k, v]) => `<div><i>${escapeHtml(k)}</i>: ${escapeHtml(v)}</div>`).join('') + '</div>';
+  }
+  return html;
+}
+
+function buildUnitListHtml(units, regionDomId, targetId) {
+  if (!units || !units.length) return '';
+  let html = '<div class="unit_block"><b>Units:</b><ul>';
+  for (const u of units) {
+    const cls = u.isOwner ? 'owner-unit' : 'other-unit';
+    html += `<li class="${cls} cr-unit-link" data-unit-id="${escapeHtml(u.id)}" data-region-id="${escapeHtml(regionDomId)}" data-region-target="${escapeHtml(targetId)}">` + unitShort(u) + '</li>';
+  }
+  html += '</ul></div>';
+  return html;
+}
+
+function buildUnitDetailHtml(unit) {
+  if (!unit) return '';
+  let uhtml = '<div class="unit_detail">' + unitShort(unit);
+  if (unit.skills && Object.keys(unit.skills).length) {
+    uhtml += '<div class="skills">' + Object.entries(unit.skills).map(([sk, val]) => `<span>${escapeHtml(sk)} ${escapeHtml(val)}</span>`).join(', ') + '</div>';
+  }
+  if (unit.items && Object.keys(unit.items).length) {
+    uhtml += '<div class="items">' + Object.entries(unit.items).map(([item, amount]) => `<span>${escapeHtml(amount)} ${escapeHtml(item)}</span>`).join(', ') + '</div>';
+  }
+  const omit = ['Name', 'id', 'Partei', 'Anzahl', 'Typ'];
+  const rest = Object.entries(unit.tags || {}).filter(([k]) => !omit.includes(k));
+  if (rest.length) {
+    uhtml += '<div class="unit_tags">' + rest.map(([k, v]) => `<div><i>${escapeHtml(k)}</i>: ${escapeHtml(v)}</div>`).join('') + '</div>';
+  }
+  uhtml += '</div>';
+  return uhtml;
+}
+
+function buildUnitCommandsHtml(unit) {
+  if (!unit) return '';
+  const commands = (unit.commands || []).join('\n');
+  return '<textarea readonly style="width:100%;min-height:8em;">' + escapeHtml(commands) + '</textarea>';
+}
+
+function updateUnitPanels(regionUse, units, unitId) {
+  if (!unitId) return; // nothing to do
+  const unit = units.find(u => u.id === unitId);
+  if (!unit) return;
+  const cridVal = (regionUse.getAttribute('data-crid') || '');
+  const unitDetails = document.getElementById('udetails_' + cridVal);
+  const unitCommands = document.getElementById('ucommands_' + cridVal);
+  if (unitDetails) unitDetails.innerHTML = buildUnitDetailHtml(unit);
+  if (unitCommands) unitCommands.innerHTML = buildUnitCommandsHtml(unit);
+}
+
+// === Orchestrator =========================================================
+function showDescription(event, targetDivId, regionDomId, unitId) {
   if (event) event.preventDefault();
-  if (!id) return false;
-  const regionTarget = document.getElementById(div_id);
+  if (!regionDomId) return false;
+  const regionTarget = document.getElementById(targetDivId);
   if (!regionTarget) return false;
-  const regionUse = document.getElementById(id);
+  const regionUse = document.getElementById(regionDomId);
   if (!regionUse) return false;
 
-  const regionDataAttr = regionUse.getAttribute('data-region');
+  const regionData = parseRegionData(regionUse);
+  const units = parseUnitsData(regionUse);
+
+  // Update side panels for a specific unit (details + commands) first so unit view stays in sync
+  if (unitId) updateUnitPanels(regionUse, units, unitId);
+
   let html = '';
-  let units = [];
-  if (regionDataAttr) {
-    try {
-      const regionData = JSON.parse(decodeURIComponent(regionDataAttr));
-      if (regionData.tags) {
-        html += `<b>${regionData.tags.Terrain || ''} ${regionData.tags.Name || ''}</b> (${regionData.x}, ${regionData.y})<div class="region_tags">`;
-        for (const [k, v] of Object.entries(regionData.tags).filter(([k]) => !['Name', 'id', 'Terrain'].includes(k))) {
-          html += `<div><i>${k}</i>: ${v}</div>`;
-        }
-        html += '</div>';
-      }
-    } catch (e) {
-      html += `<div class="error">Failed to parse region data: ${e.message}</div>`;
-    }
-  }
-
-  const unitsUse = regionUse.parentNode.querySelector('use[data-units]');
-  if (unitsUse) {
-    const unitsAttr = unitsUse.getAttribute('data-units');
-    if (unitsAttr) {
-      try {
-        units = JSON.parse(decodeURIComponent(unitsAttr));
-      } catch (e) {
-        html += `<div class="error">Failed to parse unit data: ${e.message}</div>`;
-      }
-    }
-  }
-
-  // Handle unit specific detail / commands
-  if (unitId) {
-    const cridVal = (regionUse.getAttribute('data-crid') || '');
-    const unitDetails = document.getElementById('udetails_' + cridVal);
-    const unitCommands = document.getElementById('ucommands_' + cridVal);
-    const unit = units.find(u => u.id === unitId);
-    if (unit) {
-      const escapeHtml = (str) => String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-      if (unitCommands) {
-        const commands = (unit.commands || []).join('\n');
-        unitCommands.innerHTML = '<textarea readonly style="width:100%;min-height:8em;">' + escapeHtml(commands) + '</textarea>';
-      }
-      if (unitDetails) {
-        let uhtml = '<div class="unit_detail">' + unitShort(unit);
-        if (unit.skills && Object.keys(unit.skills).length) {
-          uhtml += '<div class="skills">' + Object.entries(unit.skills).map(([sk, val]) => `<span>${sk} ${val}</span>`).join(', ') + '</div>';
-        }
-        if (unit.items && Object.keys(unit.items).length) {
-          uhtml += '<div class="items">' + Object.entries(unit.items).map(([item, amount]) => `<span>${amount} ${item}</span>`).join(', ') + '</div>';
-        }
-        const omit = ['Name', 'id', 'Partei', 'Anzahl', 'Typ'];
-        const rest = Object.entries(unit.tags || {}).filter(([k]) => !omit.includes(k));
-        if (rest.length) {
-          uhtml += '<div class="unit_tags">' + rest.map(([k, v]) => `<div><i>${k}</i>: ${v}</div>`).join('') + '</div>';
-        }
-        uhtml += '</div>';
-        unitDetails.innerHTML = uhtml;
-      }
-    }
-  }
-
-  if (units.length) {
-    html += '<div class="unit_block"><b>Units:</b><ul>';
-    for (const u of units) {
-      const cls = u.isOwner ? 'owner-unit' : 'other-unit';
-      html += `<li class="${cls}" data-unit-id="${u.id}" onclick="showDescription(event,'${div_id}','${id}','${u.id}')">` + unitShort(u) + '</li>';
-    }
-    html += '</ul></div>';
-  }
+  html += buildRegionHtml(regionData);
+  html += buildUnitListHtml(units, regionDomId, targetDivId);
 
   regionTarget.innerHTML = html || 'No details';
   regionTarget.style.display = 'block';
@@ -118,20 +147,40 @@ function hideTooltip(id) {
   tooltip.style.display = 'none';
 }
 
-function initDiv(element) {
+// TODO: Accessibility: add keyboard listeners (Enter/Space) for .cr-region-link and .cr-unit-link
+// and ARIA roles (button/list/listitem) in a subsequent enhancement.
 
-  if (element.id === 'rdetails') {
-    element.innerHTML = 'Select a region to see details here.';
-  }
-}
-
-// document.addEventListener('DOMContentLoaded', function () {
-//   const rdetails = document.getElementById('rdetails');
-//   const udetails = document.getElementById('udetails');
-//   if (rdetails) {
-//     rdetails.innerHTML = 'Select a region to see details here.';
-//   }
-//   if (udetails) {
-//     udetails.innerHTML = 'Select a unit to see details here.';
-//   }
-// });
+(function initCRMapBindings() {
+  if (window.__crMapBound) return; // avoid rebinding on partial reloads
+  window.__crMapBound = true;
+  document.addEventListener('mousemove', function (e) {
+    const target = e.target.closest('.cr-region-link');
+    if (target && target.dataset.tooltipId && target.dataset.tooltip) {
+      showTooltip(e, target.dataset.tooltipId, target.dataset.tooltip);
+    }
+  }, true);
+  document.addEventListener('mouseout', function (e) {
+    const rel = e.relatedTarget;
+    if (!e.currentTarget) return;
+    const link = e.target.closest('.cr-region-link');
+    if (link && (!rel || !rel.closest('.cr-region-link')) && link.dataset.tooltipId) {
+      hideTooltip(link.dataset.tooltipId);
+    }
+  }, true);
+  document.addEventListener('click', function (e) {
+    const regionLink = e.target.closest('.cr-region-link');
+    if (regionLink && regionLink.dataset.regionId && regionLink.dataset.regionTarget) {
+      showDescription(e, regionLink.dataset.regionTarget, regionLink.dataset.regionId);
+      e.preventDefault();
+      return;
+    }
+    const unitLink = e.target.closest('.cr-unit-link');
+    if (unitLink) {
+      const regionId = unitLink.dataset.regionId;
+      const rtarget = unitLink.dataset.regionTarget;
+      const uid = unitLink.dataset.unitId;
+      showDescription(e, rtarget, regionId, uid);
+      e.preventDefault();
+    }
+  });
+})();
