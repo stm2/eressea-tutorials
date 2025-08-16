@@ -14,7 +14,7 @@ These are the diaries for the 2024 Eressea Tutorial.
 
 - You can edit it directly on github or *clone* it to your computer and edit it there. Cloning requires more steps, but is ultimately more flexible. It requires you to learn a bit about version control with [git](https://git-scm.com/docs/gittutorial) and [github](https://docs.github.com/en/get-started/start-your-journey/hello-world)
 
-- Create a subdirectory for your faction, for example 'dragonborn'.
+- Create a subdirectory for your faction, for example 'dragonborn' (replace dragonborn below with the name of your directory).
 
 - Copy the file called 'index.njk' from the 'template' directory into your subdirectory:
 
@@ -33,13 +33,13 @@ pagination:
 ...
 ```
 
-Change the title as you wish.
+Change the title as you wish and 'nogoblin' to 'dragonborn'.
 
 - If you want to create just one big file, replace everything below the second '---' with your content. This is not recommended if you want to add a lot of text. The content is [Markdown](https://www.markdownguide.org/), a text file format that let's you add basic formatting like headings, links, images. You could also use html directly. Then you would create an index.html file instead. HTML is less recommended.
 
 - If you have more to say, you should split your diary into multiple files. In that case, leave everything below the '---' as it is, at least for now. Also copy 'Auswertung_XX.md' from the template directory into your subdirectory. You may rename them as you wish, for example to week_01.md, week_02.md, ... and so forth.
 
-- Also copy the file nogoblins.json to your directory and rename it to yourdirectory.json.
+- Also copy the file template.json to your directory and rename it to dragonborn.json.
 ```
 {
     "author": "enno",
@@ -47,7 +47,7 @@ Change the title as you wish.
     "tags": "nogoblin"
 }
 ```
-- Change the author to your name and "nogoblin" to "your_race".
+- Change the author to your name and "nogoblin" to "dragonborn".
 
 - Edit every Auswertung_XX.md:
 ```
@@ -69,6 +69,14 @@ This file consists of the 'front matter' between the lines starting with '---'. 
 - Write your text below the second '---' line
 
 - If you're editing directly in github, 'commit' your changes using the github interface. You can commit directly to your 'main' branch.
+
+### Including cr maps
+
+With the 'shortcode' crmap you can include a cr directly into your file like so:
+
+    {% crmap './dragonborn/crs/123-xy.cr' %}
+
+See template/Auswertung_01.md for more details and examples.
 
 
 ### Seeing your content
