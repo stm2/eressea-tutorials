@@ -568,5 +568,6 @@ module.exports = function (eleventyConfig) {
   });
 
   eleventyConfig.addPassthroughCopy("crs/crs-passthrough.js");
+  eleventyConfig.addPassthroughCopy({ "crs/crs.css": "css/crs.css" });
 
 };
