@@ -7,28 +7,28 @@ date: 2024-03-17
 
 Some examples to demonstrate the crmap shortcode.
 
-Map only:
+### Map with details:
+{% crmap './template/crs/1234-bLa.cr' %} 
+
+{% crmap_rdetails %}
+...
+{% crmap_udetails %}
+Orders:
+{% crmap_commands%}
+
+### Map only:
 {% crmap './template/crs/334-42.cr' '{ crid: "map1", details: false }' %}
 
-Map with details:
-{% crmap './template/crs/1234-bLa.cr' 'bla' %} 
-
-{% crmap_rdetails 'bla' %}
-...
-{% crmap_udetails 'bla' %}
-Orders:
-{% crmap_commands 'bla' %}
-
-
-Another Map:
+### Another Map: 
 {% crmap './template/crs/1000-demo.cr' 'eressea_1000' %}
-{% crmap_rdetails 'eressea_1000' %} 
-{% crmap_commands 'eressea_1000' %}
+{% crmap './template/crs/1000-demo.cr' '{ crid: "astral", z: 1, caption: "Astralraum" }'  %}
+<!-- the details shortcode always listens to the last crmap by default. If you provide an id ('eressea_1000') you can specify which map details you want to display. You can also specify another placeholder value used before a region has been clicked. -->
+{% crmap_rdetails 'eressea_1000' '' %} <!-- no placeholder wanted -->
+<!-- no unit details -->
+{% crmap_commands 'eressea_1000' '' %} <!-- no placeholder wanted -->
 
-{% crmap './template/crs/1000-demo.cr' '{ z: 1, caption: "Astralraum" }'  %}
+<!-- just the astral space map -->
+{% crmap_rdetails 'astral' '' %}
 
-
-
-Map not found error:
+### Map not found error:
 {% crmap './template/crs/334-424242.cr' %}
-

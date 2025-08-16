@@ -58,6 +58,7 @@ function escapeHtml(str) {
 let crids = [];
 let cridCounter = 0;
 let cridOwners = {}; // crid -> template inputPath
+let lastCrid = null; // Track last used crid for crmap_*
 
 function validateCrid(id) {
   if (typeof id !== 'string') return { ok: false, message: 'crid must be a string' };
@@ -404,9 +405,9 @@ module.exports = function (eleventyConfig) {
   //   - caption: string for custom text; false to omit figcaption.
   //   - Previous two-argument usage (file, optionsObject|stringId) still works.
   // Optional detail containers (place anywhere after the map):
-  //   {% crmap_rdetails 'map1' %}    -> region details target div
-  //   {% crmap_udetails 'map1' %}    -> unit details target div
-  //   {% crmap_commands 'map1' %}    -> unit commands target div
+  //   {% crmap_rdetails 'map1' 'Optional placeholder text' %}    -> region details target div
+  //   {% crmap_udetails 'map1' 'Optional placeholder text' %}    -> unit details target div
+  //   {% crmap_commands 'map1' 'Optional placeholder text' %}    -> unit commands target div
   // Notes:
   //   - crid must be lowercase a-z 0-9 _ -
   //   - Duplicate custom crid returns an inline error.
@@ -505,6 +506,7 @@ module.exports = function (eleventyConfig) {
       if (this && this.page) {
         cridOwners[crid] = this.page.inputPath;
       }
+      lastCrid = crid;
       const filePath = path.resolve(process.cwd(), file);
       if (!fs.existsSync(filePath)) {
         debug(`File not found: ${filePath}`);
@@ -535,36 +537,60 @@ module.exports = function (eleventyConfig) {
   });
 
   // Shortcode to output region details container for a given crid
-  eleventyConfig.addShortcode('crmap_rdetails', function (crid) {
-    if (!crid) return '<div class="cr-error" style="color:#a00">crmap_rdetails: missing crid</div>';
-    const v = validateCrid(crid.toString());
+
+  eleventyConfig.addShortcode('crmap_rdetails', function (crid, placeholder = null) {
+    let useCrid = crid;
+    if (!useCrid) useCrid = lastCrid;
+    if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_rdetails: missing crid (no crmap rendered yet)</div>';
+    const v = validateCrid(useCrid.toString());
     if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
-    if (!crids.includes(crid.toString())) {
-      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
+    if (!crids.includes(useCrid.toString())) {
+      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
     }
-    return `<div id=\"rdetails_${crid}\" class=\"cr-region-details\">Select a region.</div>`;
+    if (placeholder === null || placeholder === true) {
+      placeholder = 'Select a region for details.';
+    } else if (placeholder === false) {
+      placeholder = '';
+    }
+    return `<div id=\"rdetails_${useCrid}\" class=\"cr-region-details\">${placeholder}</div>`;
   });
 
   // Shortcode to output unit details container for a given crid
-  eleventyConfig.addShortcode('crmap_udetails', function (crid) {
-    if (!crid) return '<div class="cr-error" style="color:#a00">crmap_udetails: missing crid</div>';
-    const v = validateCrid(crid.toString());
+
+  eleventyConfig.addShortcode('crmap_udetails', function (crid, placeholder = null) {
+    let useCrid = crid;
+    if (!useCrid) useCrid = lastCrid;
+    if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_udetails: missing crid (no crmap rendered yet)</div>';
+    const v = validateCrid(useCrid.toString());
     if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
-    if (!crids.includes(crid.toString())) {
-      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
+    if (!crids.includes(useCrid.toString())) {
+      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
     }
-    return `<div id=\"udetails_${crid}\" class=\"cr-unit-details\">Select a unit.</div>`;
+    if (placeholder === null || placeholder === true) {
+      placeholder = 'Select a unit.';
+    } else if (placeholder === false) {
+      placeholder = '';
+    }
+    return `<div id=\"udetails_${useCrid}\" class=\"cr-unit-details\">${placeholder}</div>`;
   });
 
   // Shortcode to output unit commands container for a given crid
-  eleventyConfig.addShortcode('crmap_commands', function (crid) {
-    if (!crid) return '<div class="cr-error" style="color:#a00">crmap_commands: missing crid</div>';
-    const v = validateCrid(crid.toString());
+
+  eleventyConfig.addShortcode('crmap_commands', function (crid, placeholder = null) {
+    let useCrid = crid;
+    if (!useCrid) useCrid = lastCrid;
+    if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_commands: missing crid (no crmap rendered yet)</div>';
+    const v = validateCrid(useCrid.toString());
     if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
-    if (!crids.includes(crid.toString())) {
-      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${crid}' (render map first)</div>`;
+    if (!crids.includes(useCrid.toString())) {
+      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
     }
-    return `<div id=\"ucommands_${crid}\" class=\"cr-unit-commands\">Select a unit for commands.</div>`;
+    if (placeholder === null || placeholder === true) {
+      placeholder = 'Select a unit for commands.';
+    } else if (placeholder === false) {
+      placeholder = '';
+    }
+    return `<div id=\"ucommands_${useCrid}\" class=\"cr-unit-commands\">${placeholder}</div>`;
   });
 
   eleventyConfig.addPassthroughCopy("crs/crs-passthrough.js");
