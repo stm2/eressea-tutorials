@@ -2,7 +2,7 @@
 README.md
 
 # template directory: help for authors
-template/
+# template/
 
 # Unit tests should be ignored by Eleventy
 tests/

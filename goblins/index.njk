@@ -8,12 +8,14 @@ pagination:
   reverse: false
   alias: posts
 ---
-{% for post in posts %}
-  <article>
+<h1>Das Goblin-Tutorial</h1>
 
-    <h1>
+{% for post in posts %}
+  <section>
+
+    <h2>
       <a href="{{ post.url | url }}">{{ post.data.title }}</a>
-    </h1>
+    </h2>
 
     <time datetime="{{ post.date | dateIso }}">{{ post.date | dateReadable }}</time>
 
@@ -21,5 +23,5 @@ pagination:
 
     <a href="{{ post.url | url }}">Read more</a>
 
-  </article>
+  </section>
 {% endfor %}
