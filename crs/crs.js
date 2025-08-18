@@ -524,6 +524,8 @@ module.exports = function (eleventyConfig) {
         caption = report.name + (report.owner ? `, ${report.owner.tags.Parteiname} (${report.owner.id})` : '');
       }
 
+      // <class = "cr-report" is used as a marker to include css/js in layout!
+
       return `<script>window.crids = ${JSON.stringify(crids)};<\/script>\n` +
         `<figure class=\"cr-report\" data-crid=\"${crid}\">` +
         `<div class=\"cr-svg-wrapper\">${svg}</div>` +

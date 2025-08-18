@@ -6,7 +6,11 @@
   <title>Eressea Beispielpartie - {{title}}</title>
 
   <link rel="stylesheet" href="{{ '/css/site.css' | url }}">
+{% if content.indexOf('class="cr-report"') !== -1 %}
   <link rel="stylesheet" href="{{ '/css/crs.css' | url }}">
+  <script src="{{ '/crs/crs-passthrough.js' | url }}" defer></script>
+{% endif %}
+
   <!-- link href="https://fonts.googleapis.com/css?family=Roboto+Slab:700|Roboto&display=fallback" rel="stylesheet" -->
 </head>
 <body>

@@ -154,21 +154,20 @@ function hideTooltip(id) {
   if (window.__crMapBound) return; // avoid rebinding on partial reloads
   window.__crMapBound = true;
   document.addEventListener('mousemove', function (e) {
-    const target = e.target.closest('.cr-region-link');
+    const target = e.target?.closest?.('.cr-region-link') || null;
     if (target && target.dataset.tooltipId && target.dataset.tooltip) {
       showTooltip(e, target.dataset.tooltipId, target.dataset.tooltip);
     }
   }, true);
   document.addEventListener('mouseout', function (e) {
     const rel = e.relatedTarget;
-    if (!e.currentTarget) return;
-    const link = e.target.closest('.cr-region-link');
+    const link = e.target?.closest?.('.cr-region-link') || null;
     if (link && (!rel || !rel.closest('.cr-region-link')) && link.dataset.tooltipId) {
       hideTooltip(link.dataset.tooltipId);
     }
   }, true);
   document.addEventListener('click', function (e) {
-    const regionLink = e.target.closest('.cr-region-link');
+    const regionLink = e.target?.closest?.('.cr-region-link') || null;
     if (regionLink && regionLink.dataset.regionId && regionLink.dataset.regionTarget) {
       showDescription(e, regionLink.dataset.regionTarget, regionLink.dataset.regionId);
       e.preventDefault();
