@@ -55,11 +55,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-let crids = [];
-let cridCounter = 0;
-let cridOwners = {}; // crid -> template inputPath
-let lastCrid = null; // Track last used crid for crmap_*
-
+// Validation helper (stateless)
 function validateCrid(id) {
   if (typeof id !== 'string') return { ok: false, message: 'crid must be a string' };
   if (id !== id.toLowerCase()) return { ok: false, message: `crid '${id}' must be lowercase` };
@@ -105,7 +101,7 @@ function parseRegion(line, matches) {
   region.x = parseInt(matches[1], 10);
   region.y = parseInt(matches[2], 10);
   if (matches[3]) region.z = parseInt(matches[3], 10); else region.z = 0;
-  debug("found region", region);
+  debug(`found region (${region.x},${region.y}, ${region.z})`);
 
   return region;
 }
@@ -113,12 +109,13 @@ function parseRegion(line, matches) {
 function parseUnit(line, matches) {
   const parts = line.trim().split(/\s+/);
   const unit = { id: itoa36(parseInt(matches[1], 10)), name: '???', tags: {}, skills: {}, items: {}, commands: [] };
-  debug("found unit", unit);
+  debug("found unit", unit.id);
 
   return unit;
 }
 
 function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
+  debug('writing region ', region);
   if (!region) return '';
   if (!region.tags.Terrain) return '';
   let color = getColor(region.tags.Terrain);
@@ -171,6 +168,7 @@ function outputRegion(region, bounds, crid, withDetails, ownerFactionId) {
     // Keep a single <use> for units icon location
     unitsMarkup = `<use xlink:href="#units" x="${x}" y="${y}" data-units="${encodeURIComponent(JSON.stringify(unitsData))}"></use>`;
   }
+  debug(`found units for region ${id}:`, unitsData);
 
   const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   const regionDataAttr2 = withDetails ? ` data-region="${encodeURIComponent(JSON.stringify(regionData))}" data-region-target="rdetails_${crid}" data-region-id="${id}"` : '';
@@ -288,7 +286,7 @@ class Report {
         currentFaction = null;
         currentUnit = null;
         const reg = parseRegion(line, matches);
-        debug(`parsing region ${reg.id} with z=${reg.z}, needs to match ${zFilter}`);
+        debug(`parsing region (${reg.x},${reg.y}) with z=${reg.z}, needs to match ${zFilter}`);
         if ((reg.z || 0) === (zFilter || 0)) {
           currentRegion = report.addRegion(reg);
         } else {
@@ -387,23 +385,21 @@ class Report {
 }
 
 module.exports = function (eleventyConfig) {
-  // Usage examples (positional order: file, id, details, layer, caption):
-  //   {% crmap 'path/to/file.cr' %}                         -> auto numeric crid, details true, layer 0
-  //   {% crmap 'path/to/file.cr' 'map1' %}                  -> explicit crid
-  //   {% crmap 'path/to/file.cr' 'map1' false %}            -> explicit crid, no details (tooltips only)
-  //   {% crmap 'path/to/file.cr' 'map1' true 2 %}           -> explicit crid, details, layer z=2 (auto caption)
-  //   {% crmap 'path/to/file.cr' 'map1' true 2 'My Caption'%} -> custom caption
-  //   {% crmap 'path/to/file.cr' 'map1' true 2 false %}     -> omit caption entirely
-  //   {% crmap 'path/to/file.cr' '' true 1 %}               -> auto crid, details, layer z=1 (empty id)
-  // Object/options form (backwards compatible):
-  //   {% crmap 'path/to/file.cr' { crid: 'map1', details: false, z: 1, caption: 'Custom' } %}
-  //   {% crmap 'path/to/file.cr' { caption: false } %}      -> omit caption
-  // Notes:
-  //   - layer (z) defaults to 0; regions without z are treated as z=0.
-  //   - id (crid) must be lowercase a-z 0-9 _ - ; empty string means auto.
-  //   - details:false omits region/unit descriptions and links but keeps tooltips.
-  //   - caption: string for custom text; false to omit figcaption.
-  //   - Previous two-argument usage (file, optionsObject|stringId) still works.
+  // Usage: SECOND ARGUMENT IS OPTIONAL JSON OPTIONS STRING.
+  //   {% crmap 'path/to/file.cr' %}                                          -> defaults (auto crid, details true, z 0, auto caption)
+  //   {% crmap 'path/to/file.cr' '{}' %}                                     -> same as defaults
+  //   {% crmap 'path/to/file.cr' '{"crid":"map1"}' %}                    -> explicit crid
+  //   {% crmap 'path/to/file.cr' '{"details":false}' %}                    -> no details (tooltips only)
+  //   {% crmap 'path/to/file.cr' '{"layer":2}' %}                              -> layer z=2
+  //   {% crmap 'path/to/file.cr' '{"caption":"My Caption"}' %}           -> custom caption
+  //   {% crmap 'path/to/file.cr' '{"caption":false}' %}                    -> omit caption
+  //   {% crmap 'path/to/file.cr' '{"crid":"m1","details":false,"layer":1,"caption":false}' %}
+  // Option keys: crid (string), details (boolean), layer (integer), caption (string|false)
+  // Rules:
+  //   - crid must match /^[a-z0-9_-]+$/; if omitted => auto numeric.
+  //   - details:false removes detail panels but keeps tooltips.
+  //   - caption:false omits figcaption; caption:string sets custom text.
+  //   - Unrecognized keys are ignored.
   // Optional detail containers (place anywhere after the map):
   //   {% crmap_rdetails 'map1' 'Optional placeholder text' %}    -> region details target div
   //   {% crmap_udetails 'map1' 'Optional placeholder text' %}    -> unit details target div
@@ -412,72 +408,54 @@ module.exports = function (eleventyConfig) {
   //   - crid must be lowercase a-z 0-9 _ -
   //   - Duplicate custom crid returns an inline error.
   //   - details:false omits region/unit descriptions and links but keeps tooltips.
-  eleventyConfig.addShortcode('crmap', function (file, idArg, detailsArg, layerArg, captionArg) {
+  eleventyConfig.addShortcode('crmap', function (file, optionsJson) {
     try {
       let requestedCrid; // explicit id
       let detailsOption = true; // default include details
       let zOption = 0; // default layer 0
       let captionOption; // undefined -> auto, string -> custom, false -> omit
 
-      // Backward compatibility: if idArg is a JSON-like options string or object, treat as options
-      if (idArg && typeof idArg === 'string' && idArg.trim().startsWith('{')) {
-        let raw = idArg.trim();
-        try {
-          const normalized = raw
-            .replace(/([,{]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
-            .replace(/'/g, '"');
-          idArg = JSON.parse(normalized);
-        } catch (e) {
-          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Invalid options object: ${e.message}</div>`;
-        }
-      }
-      if (idArg && typeof idArg === 'object') {
-        requestedCrid = idArg.crid || idArg.id || '';
-        if (Object.prototype.hasOwnProperty.call(idArg, 'details')) {
-          detailsOption = idArg.details !== false;
-        }
-        if (Object.prototype.hasOwnProperty.call(idArg, 'z')) {
-          const zv = idArg.z;
-          if (/^-?\d+$/.test(zv.toString())) zOption = parseInt(zv, 10);
-        }
-        if (Object.prototype.hasOwnProperty.call(idArg, 'caption')) {
-          const c = idArg.caption;
-          if (c === false) captionOption = false; else if (typeof c === 'string') captionOption = c;
+      // Acquire per-page state (unique per template render)
+      // Structure: { crids: Set, counter: number, lastCrid: string|null }
+      let pageState;
+      if (this && this.page) {
+        this.ctx._crmapState = this.ctx._crmapState || {};
+        pageState = this.ctx._crmapState;
+        if (!pageState.crids) {
+          pageState.crids = new Set();
+          pageState.counter = 0;
+          pageState.lastCrid = null;
         }
       } else {
-        // Positional parsing: file, id, details, layer
-        if (typeof idArg === 'string') {
-          requestedCrid = idArg; // may be '' meaning auto
-        } else if (idArg === false) {
-          detailsOption = false;
-        }
-        // details argument
-        if (typeof detailsArg !== 'undefined') {
-          if (detailsArg === false || detailsArg === 'false') detailsOption = false;
-          else if (detailsArg === true || detailsArg === 'true') detailsOption = true;
-          else if (typeof detailsArg === 'number') {
-            // If number given in details slot, treat as layer when layerArg missing
-            zOption = parseInt(detailsArg, 10) || 0;
-          } else if (typeof detailsArg === 'string' && !/^-?\d+$/.test(detailsArg) && detailsArg !== 'true' && detailsArg !== 'false') {
-            // Treat as caption if a free-form string
-            captionOption = detailsArg;
+        // Fallback isolated state (should be rare)
+        pageState = { crids: new Set(), counter: 0, lastCrid: null };
+      }
+
+      // Treat missing or blank argument as '{}'
+      if (typeof optionsJson === 'undefined' || (typeof optionsJson === 'string' && optionsJson.trim() === '')) {
+        optionsJson = '{}';
+      }
+      if (typeof optionsJson === 'string') {
+        try {
+          const opts = JSON.parse(optionsJson);
+          if (opts && typeof opts === 'object') {
+            if (typeof opts.crid === 'string') requestedCrid = opts.crid;
+            if (Object.prototype.hasOwnProperty.call(opts, 'details')) detailsOption = opts.details !== false;
+            if (Object.prototype.hasOwnProperty.call(opts, 'layer')) {
+              const layerValue = opts.layer;
+              if (/^-?\d+$/.test(String(layerValue))) zOption = parseInt(layerValue, 10);
+            }
+            if (Object.prototype.hasOwnProperty.call(opts, 'caption')) {
+              if (opts.caption === false) captionOption = false; else if (typeof opts.caption === 'string') captionOption = opts.caption;
+            }
           }
+        } catch (e) {
+          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Invalid JSON options: ${escapeHtml(e.message)}</div>`;
         }
-        // layer argument
-        if (typeof layerArg !== 'undefined') {
-          if (/^-?\d+$/.test(layerArg.toString())) zOption = parseInt(layerArg, 10);
-          else if (layerArg === false) captionOption = false;
-          else if (typeof layerArg === 'string') captionOption = layerArg;
-        }
-        // explicit caption fifth param
-        if (typeof captionArg !== 'undefined') {
-          if (captionArg === false) captionOption = false;
-          else if (typeof captionArg === 'string') captionOption = captionArg;
-        }
+      } else {
+        return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Options must be a JSON string</div>`;
       }
-      if (requestedCrid === '') {
-        requestedCrid = undefined; // force auto
-      }
+      if (requestedCrid === '') requestedCrid = undefined; // force auto
 
       let crid;
       if (requestedCrid) {
@@ -487,26 +465,19 @@ module.exports = function (eleventyConfig) {
           console.warn(valid.message);
           return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${valid.message}</div>`;
         }
-        if (crids.includes(crid)) {
-          const owner = cridOwners[crid];
-          const current = this && this.page ? this.page.inputPath : 'unknown';
-          if (owner && owner !== current) {
-            const msg = `Duplicate crid '${crid}' already used by ${owner} (current: ${current})`;
-            console.warn(msg);
-            return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${msg}</div>`;
-          }
-          // Same template rebuilding: allow silently
+        if (pageState.crids.has(crid)) {
+          const msg = `Duplicate crid '${crid}' already used on this page.`;
+          console.warn(msg);
+          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${msg}</div>`;
         }
         debug(`Processing CR file with provided crid=${crid}: ${file}`);
       } else {
-        crid = (++cridCounter).toString();
+        // Incremental auto id per page
+        crid = (++pageState.counter).toString();
         debug(`Processing CR file ${crid}: ${file}`);
       }
-      if (!crids.includes(crid)) crids.push(crid);
-      if (this && this.page) {
-        cridOwners[crid] = this.page.inputPath;
-      }
-      lastCrid = crid;
+      pageState.crids.add(crid);
+      pageState.lastCrid = crid;
       const filePath = path.resolve(process.cwd(), file);
       if (!fs.existsSync(filePath)) {
         debug(`File not found: ${filePath}`);
@@ -526,7 +497,7 @@ module.exports = function (eleventyConfig) {
 
       // <class = "cr-report" is used as a marker to include css/js in layout!
 
-      return `<script>window.crids = ${JSON.stringify(crids)};<\/script>\n` +
+  return `<script>window.crids = ${JSON.stringify(Array.from(pageState.crids))};<\/script>\n` +
         `<figure class=\"cr-report\" data-crid=\"${crid}\">` +
         `<div class=\"cr-svg-wrapper\">${svg}</div>` +
         (caption ? `<figcaption class=\"cr-caption\">${escapeHtml(caption)}</figcaption>` : '') +
@@ -541,12 +512,14 @@ module.exports = function (eleventyConfig) {
   // Shortcode to output region details container for a given crid
 
   eleventyConfig.addShortcode('crmap_rdetails', function (crid, placeholder = null) {
-    let useCrid = crid;
-    if (!useCrid) useCrid = lastCrid;
+  // Access per-page state
+  let pageState = this && this.ctx ? this.ctx._crmapState : null;
+  let useCrid = crid;
+  if (!useCrid && pageState) useCrid = pageState.lastCrid;
     if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_rdetails: missing crid (no crmap rendered yet)</div>';
-    const v = validateCrid(useCrid.toString());
+  const v = validateCrid(useCrid.toString());
     if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
-    if (!crids.includes(useCrid.toString())) {
+  if (!pageState || !pageState.crids.has(useCrid.toString())) {
       return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
     }
     if (placeholder === null || placeholder === true) {
@@ -560,12 +533,13 @@ module.exports = function (eleventyConfig) {
   // Shortcode to output unit details container for a given crid
 
   eleventyConfig.addShortcode('crmap_udetails', function (crid, placeholder = null) {
-    let useCrid = crid;
-    if (!useCrid) useCrid = lastCrid;
+  let pageState = this && this.ctx ? this.ctx._crmapState : null;
+  let useCrid = crid;
+  if (!useCrid && pageState) useCrid = pageState.lastCrid;
     if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_udetails: missing crid (no crmap rendered yet)</div>';
-    const v = validateCrid(useCrid.toString());
+  const v = validateCrid(useCrid.toString());
     if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
-    if (!crids.includes(useCrid.toString())) {
+  if (!pageState || !pageState.crids.has(useCrid.toString())) {
       return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
     }
     if (placeholder === null || placeholder === true) {
@@ -579,12 +553,13 @@ module.exports = function (eleventyConfig) {
   // Shortcode to output unit commands container for a given crid
 
   eleventyConfig.addShortcode('crmap_commands', function (crid, placeholder = null) {
-    let useCrid = crid;
-    if (!useCrid) useCrid = lastCrid;
+  let pageState = this && this.ctx ? this.ctx._crmapState : null;
+  let useCrid = crid;
+  if (!useCrid && pageState) useCrid = pageState.lastCrid;
     if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_commands: missing crid (no crmap rendered yet)</div>';
-    const v = validateCrid(useCrid.toString());
+  const v = validateCrid(useCrid.toString());
     if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
-    if (!crids.includes(useCrid.toString())) {
+  if (!pageState || !pageState.crids.has(useCrid.toString())) {
       return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
     }
     if (placeholder === null || placeholder === true) {

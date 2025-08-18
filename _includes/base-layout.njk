@@ -43,7 +43,7 @@
 {% elif currentindex - loop.index0 <= radius and loop.index0 - currentindex <= radius %}
     <li><a href="{{ pagination.hrefs[ loop.index0 ] }}">{{ loop.index }}</a></li>
 {% elif currentindex - loop.index0 <= radius + 1 and loop.index0 - currentindex <= radius + 1 %}
-    <li>....</li>
+  <li>&hellip;</li>
 {% endif %}
 {%- endfor %}
     {% if pagination.href.next %}<li><a href="{{ pagination.href.next }}">&rarr;</a></li>{% endif %}

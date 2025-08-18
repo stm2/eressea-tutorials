@@ -17,11 +17,11 @@ Orders:
 {% crmap_commands%}
 
 ### Map only:
-{% crmap './template/crs/334-42.cr' '{ crid: "map1", details: false }' %}
+{% crmap './template/crs/334-42.cr' '{ "crid": "map1", "details": false }' %}
 
 ### Another Map: 
-{% crmap './template/crs/1000-demo.cr' 'eressea_1000' %}
-{% crmap './template/crs/1000-demo.cr' '{ crid: "astral", z: 1, caption: "Astralraum" }'  %}
+{% crmap './template/crs/1000-demo.cr' '{ "crid": "eressea_1000" }' %}
+{% crmap './template/crs/1000-demo.cr' '{ "crid": "astral", "layer": 1, "caption": "Astralraum" }'  %}
 <!-- the details shortcode always listens to the last crmap by default. If you provide an id ('eressea_1000') you can specify which map details you want to display. You can also specify another placeholder value used before a region has been clicked. -->
 {% crmap_rdetails 'eressea_1000' '' %} <!-- no placeholder wanted -->
 <!-- no unit details -->
