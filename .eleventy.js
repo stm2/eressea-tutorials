@@ -32,6 +32,9 @@ module.exports = function (eleventyConfig) {
 
   crs(eleventyConfig);
 
+  // all reports go here
+  eleventyConfig.addPassthroughCopy("reports");
+
 };
 
 module.exports.config = {
