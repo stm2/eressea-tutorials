@@ -31,3 +31,8 @@ Orders:
 
 ### Map not found error:
 {% crmap './reports/template/334-424242.cr' %}
+
+
+### Include an order file with automatic comment formatting and wiki links
+
+{% orderfile './reports/template/befehle-42.txt' %}  

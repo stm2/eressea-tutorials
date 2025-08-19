@@ -6,8 +6,10 @@
   <title>Eressea Beispielpartie - {{title}}</title>
 
   <link rel="stylesheet" href="{{ '/css/site.css' | url }}">
-{% if content.indexOf('class="cr-report"') !== -1 %}
+{% if content.indexOf('crs-requires-css') !== -1 %}
   <link rel="stylesheet" href="{{ '/css/crs.css' | url }}">
+{% endif %}
+{% if content.indexOf('crs-requires-js') !== -1 %}
   <script src="{{ '/crs/crs-passthrough.js' | url }}" defer></script>
 {% endif %}
 

@@ -59,3 +59,64 @@
   color: #a00;
   font-family: monospace;
 }
+
+/* Orderfile styling */
+.orderfile {
+  font-family: monospace;
+  font-size: 0.95em;
+}
+
+.order-line {
+  padding: 0.08em 0.25em;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.order-line+.order-line {
+  margin-top: 0.08em;
+}
+
+.order-line.empty {
+  height: 0.4em;
+}
+
+/* Comments: lighter, slightly indented, italic */
+.order-line.comment {
+  background: rgba(200, 200, 200, 0.03);
+  color: #555;
+  padding-left: 0.5em;
+  font-family: sans-serif;
+  border-left: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.order-line.comment+.order-line.comment {
+  margin-top: 0.06em;
+}
+
+/* Orders: more prominent */
+.order-line.order {
+  background: rgba(0, 0, 0, 0.02);
+  color: #111;
+  padding-left: 0.25em;
+}
+
+.order-line.order .order-keyword {
+  font-weight: 600;
+  color: #0b5394;
+  text-decoration: none;
+}
+
+.order-line.order+.order-line.order {
+  margin-top: 0.06em;
+}
+
+/* Some orders (diagnostics) are rendered as 'order' but without auto-link */
+.order-line.no-link {
+  color: #222;
+}
+
+/* Slightly reduce spacing before and after the whole block */
+.orderfile {
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
