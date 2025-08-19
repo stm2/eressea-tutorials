@@ -138,6 +138,41 @@ module.exports = function (eleventyConfig) {
       .replace(/'/g, '&#39;');
   }
 
+  // Resolve a user-supplied path argument used in shortcodes.
+  // Supports two forms:
+  //   1. Root-relative (starts with '/'): resolved against project root (Eleventy's input dir)
+  //   2. Relative: resolved against the directory of the calling template file
+  // Returns { fsPath, publicPath, relPath } or { error }
+  // publicPath is prefixed with optional deployment path prefix (env ELEVENTY_PATH_PREFIX) and always begins with '/'.
+  function resolveUserPath(spec, ctx) {
+    if (!spec || typeof spec !== 'string') return { error: 'missing path' };
+    // Normalize Windows backslashes just in case
+    spec = spec.replace(/\\/g, '/');
+    let pathPrefix = process.env.ELEVENTY_PATH_PREFIX || '';
+    if (pathPrefix && pathPrefix !== '/' && pathPrefix.endsWith('/')) pathPrefix = pathPrefix.slice(0, -1);
+    if (pathPrefix === '/') pathPrefix = '';
+    const projectRoot = process.cwd();
+    // Base directory derived from the template invoking the shortcode
+    let baseDir = projectRoot;
+    try {
+      if (ctx && ctx.page && ctx.page.inputPath) {
+        const tplPath = path.resolve(projectRoot, ctx.page.inputPath);
+        baseDir = path.dirname(tplPath);
+      }
+    } catch (_) { /* ignore */ }
+    const isRootRel = spec.startsWith('/');
+    const cleaned = isRootRel ? spec.replace(/^\/+/, '') : spec;
+    const candidateFs = path.resolve(isRootRel ? projectRoot : baseDir, cleaned);
+    // Prevent escaping project root
+    const rootWithSep = projectRoot.endsWith(path.sep) ? projectRoot : projectRoot + path.sep;
+    if (!candidateFs.startsWith(rootWithSep)) {
+      return { error: 'path escapes project root' };
+    }
+    const relPath = path.relative(projectRoot, candidateFs).split(path.sep).join('/');
+    const publicPath = (pathPrefix ? pathPrefix : '') + '/' + relPath;
+    return { fsPath: candidateFs, publicPath, relPath };
+  }
+
 
   // Validation helper (stateless)
   function validateCrid(id) {
@@ -545,13 +580,16 @@ module.exports = function (eleventyConfig) {
       }
       pageState.crids.add(crid);
       pageState.lastCrid = crid;
-      const filePath = path.resolve(process.cwd(), file);
-      if (!fs.existsSync(filePath)) {
-        debug(`File not found: ${filePath}`);
+      const resolved = resolveUserPath(file, this);
+      if (resolved.error) {
+        return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Path error: ${escapeHtml(resolved.error)} (${escapeHtml(file)})</div>`;
+      }
+      if (!fs.existsSync(resolved.fsPath)) {
+        debug(`File not found: ${resolved.fsPath}`);
         return `<div style=\"max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;\">File not found: ${escapeHtml(file)}</div>`;
       }
-      const reportName = path.basename(filePath, path.extname(filePath));
-      const report = Report.parse(filePath, crid, reportName, detailsOption, zOption);
+      const reportName = path.basename(resolved.fsPath, path.extname(resolved.fsPath));
+      const report = Report.parse(resolved.fsPath, crid, reportName, detailsOption, zOption);
       const svg = report.toSVG();
       let caption = '';
       if (captionOption === false) {
@@ -567,9 +605,9 @@ module.exports = function (eleventyConfig) {
       if (caption !== null && typeof caption !== 'undefined') {
         const captionEsc = escapeHtml(caption);
         if (fileLinkOption) {
-          const href = escapeHtml(encodeURI(file));
           const fileDisplay = escapeHtml(path.basename(file));
-          figcaptionHtml = `<figcaption class="cr-caption">${captionEsc}, source: <a class="cr-filelink" href="/${href}">${fileDisplay}</a></figcaption>`;
+          const href = escapeHtml(encodeURI(resolved.publicPath));
+          figcaptionHtml = `<figcaption class=\"cr-caption\">${captionEsc}, source: <a class=\"cr-filelink\" href=\"${href}\">${fileDisplay}</a></figcaption>`;
         } else {
           figcaptionHtml = `<figcaption class="cr-caption">${captionEsc}</figcaption>`;
         }
@@ -646,8 +684,6 @@ module.exports = function (eleventyConfig) {
   }
 
   function renderOrderFile(fileName, optionsJson) {
-    const fs = require('fs');
-    const path = require('path');
     if (!fileName || typeof fileName !== 'string') {
       return '<div class="cr-error">orderfile: missing file name</div>';
     }
@@ -666,11 +702,14 @@ module.exports = function (eleventyConfig) {
       }
     }
 
-    const fullPath = path.resolve(process.cwd(), fileName);
-    if (!fs.existsSync(fullPath)) {
+    const resolved = resolveUserPath(fileName, this);
+    if (resolved.error) {
+      return `<div class=\"cr-error\">orderfile: path error: ${escapeHtml(resolved.error)} (${escapeHtml(fileName)})</div>`;
+    }
+    if (!fs.existsSync(resolved.fsPath)) {
       return `<div class=\"cr-error\">orderfile: file not found: ${escapeHtml(fileName)}</div>`;
     }
-    const content = fs.readFileSync(fullPath, 'utf8');
+    const content = fs.readFileSync(resolved.fsPath, 'utf8');
     const rawLines = content.split(/\r?\n/);
     // Detect locale from lines like: "en";locale  -- default to 'de' if not found
     let locale = 'de';
@@ -830,7 +869,7 @@ module.exports = function (eleventyConfig) {
       return `<div class=\"order-line order\">${linked}${contentRest}</div>`;
     }).join('');
     // Optional file link header
-    const fileHeader = opts.fileLink ? `<div class="orderfile-file">Source: <a href="${escapeHtml(encodeURI('/' + fileName))}">${escapeHtml(path.basename(fileName))}</a></div>` : '';
+    const fileHeader = opts.fileLink ? `<div class=\"orderfile-file\">Source: <a href=\"${escapeHtml(encodeURI(resolved.publicPath))}\">${escapeHtml(path.basename(fileName))}</a></div>` : '';
     // include marker classes so the layout can detect whether to add CSS/JS
     return `<div class="orderfile crs-requires-css">${fileHeader}${inner}</div>`;
   }
