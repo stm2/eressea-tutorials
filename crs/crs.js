@@ -1,6 +1,7 @@
 // crs.js
 const fs = require('fs');
 const path = require('path');
+const { start } = require('repl');
 
 // Library version (update when changing public shortcode behavior)
 const CRS_VERSION = '0.1.0';
@@ -72,6 +73,8 @@ module.exports = function (eleventyConfig) {
   //     - When true, lines that start with ';' are treated as orders instead of
   //       comment blocks. They will be rendered as order lines with class
   //       `order no-link` (escaped text, no wiki link on the first token).
+  //   renderSpecial: boolean (default: false)
+  //     - When true, lines that match specialPrefixes are rendered.
   //
   // Examples:
   //   {% orderfile 'reports/orcs/orders-demo-02.txt' %}
@@ -79,6 +82,24 @@ module.exports = function (eleventyConfig) {
   //   {% orderfile 'reports/orcs/orders-demo-02.txt' '{"commentsAsOrders":true}' %}
   eleventyConfig.addShortcode('orderfile', function (fileName, optionsJson) {
     return renderOrderFile.call(this, fileName, optionsJson);
+  });
+
+  // Usage examples for the .nr helpers:
+  // {% readnr 'reports/orcs/orders-demo-02.nr' %}              -> registers file, auto nrid
+  // {% readnr 'reports/orcs/orders-demo-02.nr' '{"nrid":"r1"}' %} -> register with explicit nrid
+  // {% shownr 'list' %}                                        -> show a list of all bookmarks from last readnr
+  // {% shownr 'header' %}                                      -> show 'header' bookmark from last readnr
+  // {% shownr 'r1' 'battles' %}                                -> show 'battles' bookmark from nrid r1
+  // {% shownr '10-20' %}                                       -> show lines 10..20 from last nrid
+  // {% shownr '{"nrid":"r1","range":"5-15", "lineNumbers":true }' %}        -> JSON form
+  // {% shownr 'r1' 'unit_abc123' %}                            -> show the unit with id 'abc123' inside region
+  // {% shownr '{"bookmark":"heading_ereignisse","maxHeight":300}' %} -> show heading with max 300px height
+  // Shortcodes for reading and showing .nr (order/report) files with bookmarks
+  eleventyConfig.addShortcode('readnr', function (file, optionsJson) {
+    return readnrShortcode.call(this, file, optionsJson);
+  });
+  eleventyConfig.addShortcode('shownr', function (arg1, arg2) {
+    return shownrShortcode.call(this, arg1, arg2);
   });
 
   // Passthrough assets
@@ -688,7 +709,7 @@ module.exports = function (eleventyConfig) {
       return '<div class="cr-error">orderfile: missing file name</div>';
     }
     // parse options
-    const opts = { markdownInComments: true, fileLink: true, commentsAsOrders: false };
+    const opts = { markdownInComments: true, fileLink: true, commentsAsOrders: false, renderSpecial: false };
     if (typeof optionsJson === 'string' && optionsJson.trim() !== '') {
       try {
         const parsed = JSON.parse(optionsJson);
@@ -696,6 +717,7 @@ module.exports = function (eleventyConfig) {
           if (Object.prototype.hasOwnProperty.call(parsed, 'markdownInComments')) opts.markdownInComments = !!parsed.markdownInComments;
           if (Object.prototype.hasOwnProperty.call(parsed, 'fileLink')) opts.fileLink = !!parsed.fileLink;
           if (Object.prototype.hasOwnProperty.call(parsed, 'commentsAsOrders')) opts.commentsAsOrders = !!parsed.commentsAsOrders;
+          if (Object.prototype.hasOwnProperty.call(parsed, 'renderSpecial')) opts.renderSpecial = !!parsed.renderSpecial;
         }
       } catch (e) {
         return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">orderfile: invalid options JSON: ${escapeHtml(e.message)}</div>`;
@@ -808,15 +830,18 @@ module.exports = function (eleventyConfig) {
       let line = rawLine || '';
       if (line.trim() === '') return '<div class="order-line empty"></div>';
       // Special-case: treat certain diagnostic/comment prefixes as orders (no link)
-      const specialPrefixes = [/^TIMESTAMP\b/i, /^Magellan version/i, /^ECheck\b/i];
+      const specialPrefixes = [/^TIMESTAMP\b/i, /^Magellan version/i, /^ECheck\b/i, /^bestaetigt\s*$/];
       const pureLine = line.replace(/^;\s*/, '');
       const isSpecial = specialPrefixes.some(rx => rx.test(pureLine));
-      console.log(isSpecial ? 'special' : 'normal' + ': ' + line);
+
       if (isSpecial) {
         // render these special diagnostic lines in the same style as comment-as-order
-
-        const txt = escapeHtml(line);
-        return `<div class=\"order-line order no-link\">${txt}</div>`;
+        if (opts.renderSpecial) {
+          const txt = escapeHtml(line);
+          return `<div class=\"order-line order no-link\">${txt}</div>`;
+        } else {
+          return '';
+        }
       }
       if (/^\/\//.test(line.trim())) {
         // lines beginning with // are a special "comment" command that should link to the
@@ -835,7 +860,7 @@ module.exports = function (eleventyConfig) {
           const commentText = opts.markdownInComments ? md.renderInline(line) : escapeHtml(line);
           return `<div class=\"order-line order no-link\">${(commentText)}</div>`;
         } else {
-          const commentText = line.replace(/^;\s*/, '');
+          const commentText = line; // .replace(/^;\s*/, '');
           // default behavior: comment line - render markdown if enabled
           if (opts.markdownInComments && md) {
             return `<div class=\"order-line comment\">${md.renderInline(commentText)}</div>`;
@@ -873,4 +898,353 @@ module.exports = function (eleventyConfig) {
     // include marker classes so the layout can detect whether to add CSS/JS
     return `<div class="orderfile crs-requires-css">${fileHeader}${inner}</div>`;
   }
+
+  // ----------------- readnr / shownr implementations -----------------
+
+  function _getPageNrState(ctxThis) {
+    if (ctxThis && ctxThis.ctx) {
+      ctxThis.ctx._nrState = ctxThis.ctx._nrState || {};
+      const s = ctxThis.ctx._nrState;
+      if (!s.nrids) { s.nrids = new Set(); s.counter = 0; s.lastNrid = null; s.nrFiles = {}; }
+      return s;
+    }
+    return { nrids: new Set(), counter: 0, lastNrid: null, nrFiles: {} };
+  }
+
+  function readnrShortcode(file, optionsJson) {
+    const separator = /^\s*-+\s*$/;
+
+    const fs = require('fs');
+    const path = require('path');
+    let opts = {};
+    if (typeof optionsJson === 'string' && optionsJson.trim() !== '') {
+      try { opts = JSON.parse(optionsJson); } catch (e) { return `<div class=\"cr-error\">readnr: invalid options JSON: ${escapeHtml(e.message)}</div>`; }
+    }
+    const requestedNrid = opts && typeof opts.nrid === 'string' && opts.nrid !== '' ? opts.nrid : undefined;
+    const pageState = _getPageNrState(this);
+    // determine nrid
+    let nrid;
+    if (requestedNrid) {
+      const v = validateCrid(requestedNrid);
+      if (!v.ok) return `<div class=\"cr-error\">${escapeHtml(v.message)}</div>`;
+      if (pageState.nrids.has(requestedNrid)) return `<div class=\"cr-error\">readnr: duplicate nrid '${escapeHtml(requestedNrid)}' on this page</div>`;
+      nrid = requestedNrid;
+    } else {
+      nrid = (++pageState.counter).toString();
+    }
+    const resolved = resolveUserPath(file, this);
+    if (resolved.error) return `<div class=\"cr-error\">readnr: path error: ${escapeHtml(resolved.error)} (${escapeHtml(file)})</div>`;
+    if (!fs.existsSync(resolved.fsPath)) return `<div class=\"cr-error\">readnr: file not found: ${escapeHtml(file)}</div>`;
+    const content = fs.readFileSync(resolved.fsPath, 'utf8');
+    const rawLines = content.split(/\r?\n/);
+    const bookmarks = {};
+    const startIndices = [];
+
+    const language = /.*Report for .*/.test(rawLines[0]) ? 'en' : 'de'; // crude language detection based on first line
+
+    // Find the section separator (a line containing only hyphens) that marks the start of regions
+    let regionSectionStart = null;
+    for (let i = 0; i < rawLines.length; i++) {
+      if (separator.test(rawLines[i])) { regionSectionStart = i; break; }
+    }
+
+    // Header detection: detect only the specifically requested headings (exact match, case-insensitive)
+    // These headers (if present) become bookmarks and capture the header line itself and everything
+    // up to (but not including) the next header occurrence.
+    const HEADER_TITLES = {
+      // active sections:
+      // events
+      // errors
+      // magic
+      // production
+      // study
+      // economy
+      // movement
+      // battle
+      // mail
+      // nr
+      //
+      // newspells
+      // newpotions
+
+      de: [
+        'Ereignisse',
+        'Warnungen und Fehler',
+        'Magie und Artefakte',
+        'Rohstoffe und Produktion',
+        'Lehren und Lernen',
+        'Wirtschaft und Handel',
+        'Reisen und Bewegung',
+        'Kämpfe',
+        'Botschaften',
+        'Neue Zauber',
+        'Neue Tränke',
+        'Verschiedenes',
+        'Hinweise'
+      ],
+      en: [
+        'Events',
+        'Warnings and Errors',
+        'Magic and Artefacts',
+        'Resources and Production',
+        'Learning and Teaching',
+        'Economy and Trade',
+        'Movement and Travel',
+        'Battles',
+        'Dispatches',
+        'New Spells',
+        'New Potions',
+        'Miscellaneous',
+        'Notifications'
+      ]
+
+
+    };
+    // helper to sanitize a header into a bookmark name
+    function sanitizeToken(tok) {
+      return String(tok).trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-\p{L}]/gu, '');
+    }
+
+    function startIndicesToBookmarks(startIndices, rawLines, bookmarks) {
+      startIndices.sort((a, b) => a.index - b.index);
+      for (let s = 0; s < startIndices.length; s++) {
+        const cur = startIndices[s];
+        const next = startIndices[s + 1];
+        const start = cur.index;
+        const end = next ? next.index - 1 : rawLines.length - 1;
+        bookmarks[cur.name] = { start: start + 1, end: end + 1 };
+      }
+    }
+
+    if (regionSectionStart !== null) {
+      bookmarks['header'] = { start: 1, end: regionSectionStart };
+    }
+
+    let firstHeader = 0;
+    for (let i = 0; i < rawLines.length; i++) {
+      const trimmed = rawLines[i].trim();
+      if (!trimmed) continue;
+      for (const ht of HEADER_TITLES[language]) {
+        if (trimmed.toLowerCase() === ht.toLowerCase()) {
+          const nm = `heading_${(sanitizeToken(ht))}`;
+          startIndices.push({ name: nm, index: i });
+          if (firstHeader === 0) firstHeader = i;
+          break;
+        }
+      }
+    }
+
+
+    if (regionSectionStart !== null) {
+      bookmarks['intro'] = { start: 1, end: firstHeader > 0 ? startIndices[0].index : regionSectionStart };
+      startIndices.push({ name: 'regions', index: regionSectionStart });
+    }
+    startIndicesToBookmarks(startIndices, rawLines, bookmarks);
+    startIndices.length = 0;
+
+    // findAllHeaders
+    if (firstHeader > 0) {
+      for (let i = firstHeader; i <= regionSectionStart; i++) {
+        const trimmed = rawLines[i].trim();
+        if (!trimmed) continue;
+        if (/^\s{5}.*/.test(rawLines[i])) {
+          const nm = `heading_${(sanitizeToken(trimmed))}`;
+          if (!bookmarks[nm]) {
+            startIndices.push({ name: nm, index: i });
+          }
+        }
+      }
+      startIndices.push({ name: 'regions', index: regionSectionStart });
+      startIndicesToBookmarks(startIndices, rawLines, bookmarks);
+    }
+
+    let regionSectionEnd = regionSectionStart;
+
+    // Region detection: after the separator, parse region sections.
+    // A region section starts with a line "Name (x,y)" or "Name (x,y,z)" and
+    // continues until the next separator line (a line that contains only hyphens).
+    if (regionSectionStart !== null) {
+      for (let i = regionSectionStart + 1; i < rawLines.length;) {
+        const raw = rawLines[i];
+        // skip empty lines and repeated separators
+        if (!raw || separator.test(raw) || raw.trim() === '') { i++; continue; }
+
+        // match "Name (x,y)" or "Name (x,y,z)" -- assume name does not contain parentheses
+        const m = raw.trim().match(/^([^()]+)\s*\(([^)]+)\)/);
+        if (!m) { i++; continue; }
+
+        const namePart = m[1].trim();
+        const coords = m[2].split(',').map(s => s.trim());
+        if (coords.length >= 2) {
+          const x = parseInt(coords[0], 10);
+          const y = parseInt(coords[1], 10);
+          const ztok = coords[2] ? coords[2] : null;
+
+          // find the end of this region: the next separator line (hyphens) or EOF
+          let j = i + 1;
+          while (j < rawLines.length && !separator.test(rawLines[j])) j++;
+          const endIdx = j < rawLines.length ? j - 1 : rawLines.length - 1;
+
+          const key = ztok ? `region_${x}_${y}_${sanitizeToken(ztok)}` : `region_${x}_${y}`;
+          // store bookmark spanning from this header line through the line before the separator
+          bookmarks[key] = { start: i + 1, end: endIdx + 1 };
+          // startIndices.push({ name: key, index: i });
+
+          // detect unit sub-sections inside this region and add unit bookmarks ---
+          // Unit lines have the form (indented) "  - Name (ID)" (leading two spaces, a marker, name, then ID in parentheses).
+          // They end at the next empty line or separator line (we stop at endIdx).
+          for (let k = i + 1; k <= endIdx;) {
+            const lineK = rawLines[k];
+            if (!lineK || separator.test(lineK) || lineK.trim() === '') { k++; continue; }
+            // Match unit header lines: two (or more) spaces, one of + * - marker, space, name (no parentheses), space, (ID)
+            const um = lineK.match(/^\s{2,}[+\-*]\s+([^()]+)\s*\(([^()\s]+)\)/);
+            if (!um) { k++; continue; }
+            const unitName = um[1].trim();
+            const unitIdRaw = um[2].trim();
+            // sanitize unit id for bookmark key (keep readable and safe)
+            const unitId = sanitizeToken(unitIdRaw) || unitIdRaw.replace(/[^a-z0-9_-]/ig, '_');
+            // find unit end: next empty line or separator or endIdx
+            let j2 = k + 1;
+            while (j2 <= endIdx && rawLines[j2].trim() !== '' && !separator.test(rawLines[j2])) j2++;
+            const unitEnd = j2 <= endIdx ? j2 : endIdx;
+            const unitKey = `unit_${unitId}`;
+            bookmarks[unitKey] = { start: k + 1, end: unitEnd + 1 };
+            // startIndices.push({ name: unitKey, index: k });
+            // continue scanning after this unit block
+            k = j2 + 1;
+          }
+          // --- end unit detection ---
+          regionSectionEnd = j;
+
+          // continue after the separator (if any)
+          i = j + 1;
+        } else {
+          i++;
+        }
+      }
+    }
+
+    startIndicesToBookmarks(startIndices, rawLines, bookmarks);
+    if (regionSectionStart != regionSectionEnd) {
+      bookmarks.regions = {
+        start: regionSectionStart + 2,
+        end: regionSectionEnd + 1
+      };
+    }
+    if (regionSectionEnd) {
+      bookmarks.outro = {
+        start: regionSectionEnd + 1,
+        end: rawLines.length
+      };
+    }
+
+    bookmarks.all = { start: 1, end: rawLines.length };
+
+    console.log(regionSectionStart);
+    console.log(startIndices);
+    console.log(bookmarks);
+
+    // store
+    pageState.nrids.add(nrid);
+    pageState.lastNrid = nrid;
+    pageState.nrFiles[nrid] = {
+      fsPath: resolved.fsPath,
+      publicPath: resolved.publicPath,
+      relPath: resolved.relPath,
+      lines: rawLines,
+      bookmarks: bookmarks,
+      sourceName: path.basename(resolved.fsPath)
+    };
+    return `<div class=\"nr-registered crs-requires-css\" data-nrid=\"${escapeHtml(nrid)}\">NR registered: ${escapeHtml(nrid)} (source: <a href=\"${escapeHtml(encodeURI(resolved.publicPath))}\">${escapeHtml(path.basename(resolved.fsPath))}</a>)</div>`;
+  }
+
+  function shownrShortcode(arg1, arg2) {
+    const pageState = _getPageNrState(this);
+    let opts = {};
+    function parseRangeString(s) {
+      const m = String(s).trim().match(/^(\d+)(?:-(\d+))?$/);
+      if (!m) return null;
+      const a = parseInt(m[1], 10);
+      const b = m[2] ? parseInt(m[2], 10) : a;
+      return { start: Math.min(a, b), end: Math.max(a, b) };
+    }
+    if (typeof arg2 === 'undefined') {
+      if (typeof arg1 === 'string' && arg1.trim().startsWith('{')) {
+        try { opts = JSON.parse(arg1); } catch (e) { return `<div class=\"cr-error\">shownr: invalid JSON: ${escapeHtml(e.message)}</div>`; }
+      } else if (typeof arg1 === 'string' && parseRangeString(arg1)) {
+        opts.range = parseRangeString(arg1);
+      } else if (typeof arg1 === 'string') {
+        opts.bookmark = arg1;
+      } else {
+        return `<div class=\"cr-error\">shownr: invalid arguments</div>`;
+      }
+    } else {
+      if (typeof arg1 === 'string' && validateCrid(arg1).ok) {
+        opts.nrid = arg1;
+        if (typeof arg2 === 'string' && arg2.trim().startsWith('{')) {
+          try { Object.assign(opts, JSON.parse(arg2)); } catch (e) { return `<div class=\"cr-error\">shownr: invalid JSON: ${escapeHtml(e.message)}</div>`; }
+        } else if (parseRangeString(arg2)) {
+          opts.range = parseRangeString(arg2);
+        } else { opts.bookmark = arg2; }
+      } else if (typeof arg2 === 'string' && validateCrid(arg2).ok) {
+        opts.nrid = arg2;
+        if (parseRangeString(arg1)) opts.range = parseRangeString(arg1); else opts.bookmark = arg1;
+      } else {
+        if (typeof arg2 === 'string' && arg2.trim().startsWith('{')) {
+          try { Object.assign(opts, JSON.parse(arg2)); } catch (e) { return `<div class=\"cr-error\">shownr: invalid JSON: ${escapeHtml(e.message)}</div>`; }
+          if (!opts.nrid && typeof arg1 === 'string') { if (parseRangeString(arg1)) opts.range = parseRangeString(arg1); else opts.bookmark = arg1; }
+        } else {
+          if (typeof arg1 === 'string' && validateCrid(arg1).ok) opts.nrid = arg1; else opts.bookmark = arg1;
+          if (typeof arg2 === 'string' && parseRangeString(arg2)) opts.range = parseRangeString(arg2);
+        }
+      }
+    }
+    if (!opts.range && parseRangeString(opts.bookmark)) {
+      opts.range = parseRangeString(opts.bookmark); opts.bookmark = undefined;
+    }
+    // parse maxHeight option (number -> px or CSS size string)
+    let maxHeight = undefined;
+    if (Object.prototype.hasOwnProperty.call(opts, 'maxHeight')) maxHeight = opts.maxHeight;
+    else if (Object.prototype.hasOwnProperty.call(opts, 'max_height')) maxHeight = opts.max_height;
+    if (typeof maxHeight === 'number' && !isNaN(maxHeight)) maxHeight = `${maxHeight}px`;
+    if (typeof maxHeight === 'string') maxHeight = maxHeight.trim() || undefined;
+
+    let nrid = opts.nrid;
+    if (!nrid) nrid = pageState.lastNrid;
+    if (!nrid) return `<div class=\"cr-error\">shownr: no nrid specified and no previous readnr on this page</div>`;
+    if (!pageState.nrFiles || !pageState.nrFiles[nrid]) return `<div class=\"cr-error\">shownr: unknown nrid '${escapeHtml(nrid)}' (did you call readnr first?)</div>`;
+
+    let lineNumbers = opts.lineNumbers || false;
+
+    const fileInfo = pageState.nrFiles[nrid];
+    const totalLines = fileInfo.lines.length;
+    let start = 1, end = totalLines;
+    if (opts.bookmark) {
+      if (opts.bookmark === 'list') {
+        const bookmarks = Object.keys(fileInfo.bookmarks || {});
+        if (bookmarks.length === 0) return `<div class=\"cr-error\">shownr: no bookmarks available for nrid '${escapeHtml(nrid)}'</div>`;
+        const listItems =
+          bookmarks.map(bm => {
+            const b = fileInfo.bookmarks[bm];
+            return `<li><div class=\"cr-bookmark-link\" data-nrid=\"${escapeHtml(nrid)}\" data-bookmark=\"${escapeHtml(bm)}\">${escapeHtml(bm)}: ${b.start} - ${b.end}</div></li>`;
+          }).join('');
+        return `<div class=\"shownr-bookmarks crs-requires-css\" data-nrid=\"${escapeHtml(nrid)}\"><ul>${listItems}</ul></div>`;
+      }
+      const bm = fileInfo.bookmarks && fileInfo.bookmarks[opts.bookmark];
+      if (!bm) return `<div class=\"cr-error\">shownr: unknown bookmark '${escapeHtml(opts.bookmark)}' for nrid '${escapeHtml(nrid)}'</div>`;
+      start = bm.start; end = bm.end;
+    } else if (opts.range) {
+      start = Math.max(1, opts.range.start); end = Math.min(totalLines, opts.range.end);
+      if (start > end) return `<div class=\"cr-error\">shownr: invalid range ${start}-${end}</div>`;
+    }
+    const slice = fileInfo.lines.slice(start - 1, end);
+    const inner = slice.map((ln, idx) => {
+      const linenr = lineNumbers ? `<span class='shownr-linenr'>${start + idx}</span>` : '';
+      return `<div class=\"shownr-line\" data-line=\"${start + idx}\">${linenr}${escapeHtml(ln)}</div>`;
+    }).join('');
+    const header = `<div class=\"shownr-file\">Source: <a href=\"${escapeHtml(encodeURI(fileInfo.publicPath))}\">${escapeHtml(fileInfo.sourceName)}</a> - lines ${start}-${end}</div>`;
+    const shownrStyle = maxHeight ? ` style=\"max-height:${escapeHtml(maxHeight)}; overflow:auto;\"` : '';
+    return `<div class=\"shownr-wrapper crs-requires-css\" data-nrid=\"${escapeHtml(nrid)}\">${header}<div class=\"shownr\"${shownrStyle}>${inner}</div></div>`;
+  }
+
 };

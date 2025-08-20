@@ -4,10 +4,13 @@ date: 2024-03-17
 ---
 ## Die Auswertung
 
-Some examples to demonstrate the crmap shortcode.
+Beispiele für die Darstellung von Karten, NRs, Befehlen mit crmap Shortcodes.
 
-### Map with details:
-{% crmap './reports/template/1234-bLa.cr' %} 
+## Karte mit Details
+
+Relative Pfade funktionieren, aber die Quelldateien werden nicht automatisch zur erzeugten Seite kopiert, weswegen der Link zur cr-Datei tot ist.
+
+{% crmap './reports/1234-bLa.cr' %} 
 
 {% crmap_rdetails %}
 ...
@@ -15,12 +18,15 @@ Some examples to demonstrate the crmap shortcode.
 Orders:
 {% crmap_commands%}
 
-### Map only:
-{% crmap './reports/template/334-42.cr' '{ "crid": "map1", "details": false }' %}
+### Karte alleine
 
-### Another Map: 
-{% crmap './reports/template/1000-demo.cr' '{ "crid": "eressea_1000" }' %}
-{% crmap './reports/template/1000-demo.cr' '{ "crid": "astral", "layer": 1, "caption": "Astralraum" }'  %}
+Alle Dateien in /reports werden im Projekt automatisch zur erzeugten Seite kopiert ()`.eleventy.js:  eleventyConfig.addPassthroughCopy("reports");`) Hier funktioniert der Link.
+
+{% crmap '/reports/template/334-42.cr' '{ "crid": "map1", "details": false }' %}
+
+### Noch eine Karte mit Astralraum
+{% crmap '/reports/template/1000-demo.cr' '{ "crid": "eressea_1000" }' %}
+{% crmap '/reports/template/1000-demo.cr' '{ "crid": "astral", "layer": 1, "caption": "Astralraum" }'  %}
 <!-- the details shortcode always listens to the last crmap by default. If you provide an id ('eressea_1000') you can specify which map details you want to display. You can also specify another placeholder value used before a region has been clicked. -->
 {% crmap_rdetails 'eressea_1000' '' %} <!-- no placeholder wanted -->
 <!-- no unit details -->
@@ -29,10 +35,56 @@ Orders:
 <!-- just the astral space map -->
 {% crmap_rdetails 'astral' '' %}
 
-### Map not found error:
-{% crmap './reports/template/334-424242.cr' %}
+### Fehlermeldungen, falls datei nicht vorhanden
+{% crmap '/reports/template/334-424242.cr' %}
 
 
-### Include an order file with automatic comment formatting and wiki links
+## Befehlsdateien mit Formatierung der Kommentare und Wikilinks
 
-{% orderfile './reports/template/befehle-42.txt' %}  
+{% orderfile '/reports/template/befehle-42.txt' %}
+
+... oder ohne Formatierung
+
+{% orderfile '/reports/template/befehle-42.txt' '{ "commentsAsOrders": true, "markdownInComments": false }' %}
+
+
+## NR-Abschnitte 
+
+Einlesen:
+
+{% readnr '/reports/template/334-42.nr' %} 
+
+#### Liste aller gefundenen Abschnitte anzeigen
+
+{% shownr 'list' %}
+
+#### Headers / Regions / Outro
+{% shownr 'intro' %}
+
+{% shownr '{ "bookmark": "header",  "maxHeight" : "15em" }' %}
+
+{% shownr '{ "bookmark": "regions",  "maxHeight" : "15em" }' %}
+
+{% shownr 'outro' %}
+
+#### Abschnitte
+{% shownr 'heading_Ereignisse' %}
+
+{% shownr 'heading_Kämpfe' %}
+
+{% shownr 'heading_In_Cibifar_-20050_findet_ein_Kampf_statt' %}
+
+#### Zeilen
+{% shownr '10-20' %} 
+
+#### Region
+{% shownr 'region_-2005_0' %}
+  
+#### Einheit
+{% shownr 'unit_mrv4' %}
+
+### Beliebige Dateien
+
+Wir können sogar beliebige Textdateien anzeigen.
+{% readnr './reports/1234-bLa.cr' %}
+{% shownr '{ "bookmark": "21-33", "lineNumbers" : true }' %}
