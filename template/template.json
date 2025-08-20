@@ -1,5 +1,6 @@
 {
     "author": "stm",
     "layout": "post-layout.njk",
-    "tags": "nogoblin"
+    "tags": "nogoblin",
+    "locale": "de"
 }

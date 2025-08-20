@@ -1,7 +1,5 @@
 const crs = require('./crs/crs.js');
-const moment = require('moment');
-
-moment.locale('en');
+const { DateTime } = require('luxon');
 
 const pageAssetsPlugin = require('eleventy-plugin-page-assets');
 
@@ -18,11 +16,24 @@ module.exports = function (eleventyConfig) {
   });
 
   eleventyConfig.addFilter('dateIso', date => {
-    return moment(date).toISOString();
+    if (!date) return '';
+    try {
+      const dt = date instanceof Date ? DateTime.fromJSDate(date) : DateTime.fromISO(String(date));
+      if (dt.isValid) return dt.toUTC().toISO();
+      // fallback to native parse
+      const d2 = new Date(String(date));
+      return isNaN(d2) ? '' : DateTime.fromJSDate(d2).toUTC().toISO();
+    } catch (e) { return ''; }
   });
 
-  eleventyConfig.addFilter('dateReadable', date => {
-    return moment(date).utc().format('LL'); // E.g. May 31, 2019
+  // dateReadable: server-side formatted date using the provided locale (e.g. page.locale)
+  // Usage: {{ page.date | dateReadable(page.locale) }} — falls back to 'de'
+  eleventyConfig.addFilter('dateReadable', (date, locale) => {
+    if (!date) return '';
+    let dt = date instanceof Date ? DateTime.fromJSDate(date) : DateTime.fromISO(String(date));
+    if (!dt.isValid) dt = DateTime.fromJSDate(new Date(String(date)));
+    const useLocale = locale || 'en';
+    return dt.setLocale(useLocale).toLocaleString(DateTime.DATE_FULL);
   });
 
   eleventyConfig.addShortcode('excerpt', article => extractExcerpt(article));

@@ -4,7 +4,7 @@ layout: base-layout.njk
 <article>
   <h1>{{ title }}</h1>
   {% if author %}<author>{{author}}</author>,{% else %}<author>N.N.</author>,{% endif %}
-  <time datetime="{{ date | dateIso }}">{{ date | dateReadable }}</time>
+  <time datetime="{{ date | dateIso }}">{{ page.date | dateReadable(locale or site.locale) }}</time>
   {{ content | safe }}
 </article>
 <footer>

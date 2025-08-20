@@ -44,10 +44,13 @@ Change the title as you wish and 'nogoblin' to 'dragonborns'.
 {
     "author": "enno",
     "layout": "post-layout.njk",
-    "tags": "nogoblin"
+    "tags": "nogoblin",
+    "locale": "de"
 }
 ```
 - Change the author to your name and "nogoblin" to "dragonborns".
+
+- Change the locale to en if you want to write in English.
 
 - Edit every Auswertung_XX.md:
 ```
