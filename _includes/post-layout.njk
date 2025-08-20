@@ -10,3 +10,47 @@ layout: base-layout.njk
 <footer>
 Tags: {{tags}}
 </footer>
+
+{# Determine the collection that contains this page (skip generic 'all') #}
+{% set raceCollectionName = null %}
+{% for colName, colItems in collections %}
+  {% if colName != 'all' and colItems and colItems | length > 0 %}
+    {% for it in colItems %}
+      {% if it.inputPath == page.inputPath %}
+        {% set raceCollectionName = colName %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+{% if raceCollectionName %}
+  {% set coll = collections[raceCollectionName] | sort(attribute='date') %}
+  {# Find next in this collection #}
+  {% set found = false %}
+  {% set next = null %}
+  {% set previous = null %}
+  {% for item in coll %}
+    {% if found and next == null %}
+      {% set next = item %}
+    {% endif %}
+    {% if item.inputPath == page.inputPath %}
+      {% set found = true %}
+    {% elif found == false %}
+       {% set previous = item %}
+    {% endif %}
+  {% endfor %}
+  {% if previous %}
+    <nav class="post-previous">
+      Previous: <a href="{{ previous.url }}">{{ previous.data.title or previous.fileSlug }}</a>
+    {% if not next %}
+      </nav>
+    {% endif %}
+  {% endif %}
+  {% if next %}
+    {% if not previous %}
+      <nav class="post-next">
+    {% endif %}
+      Next: <a href="{{ next.url }}">{{ next.data.title or next.fileSlug }}</a>
+    </nav>
+  {% endif %}
+{% endif %}
