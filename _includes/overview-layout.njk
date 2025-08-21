@@ -1,0 +1,21 @@
+---
+layout: base-layout.njk
+---
+{{ content | safe }}
+
+{% for post in posts %}
+  <section>
+
+    <h2>
+      <a href="{{ post.url }}">{{ post.data.title }}</a>
+    </h2>
+
+    <time datetime="{{ post.date | dateIso }}">{{ post.date | dateReadable(locale) }}</time>
+
+    {% excerpt post %}
+
+    <a href="{{ post.url }}">Read more</a>
+
+  </section>
+{% endfor %}
+
