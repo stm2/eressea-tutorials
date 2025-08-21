@@ -190,7 +190,7 @@ module.exports = function (eleventyConfig) {
       return { error: 'path escapes project root' };
     }
     const relPath = path.relative(projectRoot, candidateFs).split(path.sep).join('/');
-    const publicPath = (pathPrefix ? pathPrefix : '') + '/' + relPath;
+    const publicPath = isRootRel ? (pathPrefix ? pathPrefix : '') + '/' + relPath : spec;
     return { fsPath: candidateFs, publicPath, relPath };
   }
 
