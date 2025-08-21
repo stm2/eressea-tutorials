@@ -20,7 +20,7 @@ These are the diaries for the 2024 Eressea Tutorial.
 
 ```
 ---
-layout: base-layout.njk
+layout: overview-layout.njk
 title: Not Goblins!
 override:tags: ["race"]
 pagination:
@@ -29,7 +29,6 @@ pagination:
   reverse: false
   alias: posts
 ---
-{% for post in posts %}
 ...
 ```
 
@@ -37,7 +36,7 @@ Change the title as you wish and 'nogoblin' to 'dragonborns'.
 
 - If you want to create just one big file, replace everything below the second '---' with your content. This is not recommended if you want to add a lot of text. The content is [Markdown](https://www.markdownguide.org/), a text file format that let's you add basic formatting like headings, links, images. You could also use html directly. Then you would create an index.html file instead. HTML is less recommended.
 
-- If you have more to say, you should split your diary into multiple files. In that case, leave everything below the '---' as it is, at least for now. Also copy 'Auswertung_XX.md' from the template directory into your subdirectory. You may rename them as you wish, for example to week_01.md, week_02.md, ... and so forth.
+- If you have more to say, you should split your diary into multiple files. In that case, just add a short intro below the '---'. Also copy 'Auswertung_XX.md' from the template directory into your subdirectory. You may rename them as you wish, for example to week_01.md, week_02.md, ... and so forth.
 
 - Also copy the file template.json to your directory and rename it to dragonborns.json.
 ```
@@ -58,10 +57,9 @@ Change the title as you wish and 'nogoblin' to 'dragonborns'.
 title: "Dragonborn: Round 1"
 date: 2024-03-17
 ---
-# Round 1
- Lore ipsum ...
-## Heading 1
-
+## Was passiert ist
+...
+## Unser Plan
 ...
 ```
 
@@ -75,16 +73,22 @@ This file consists of the 'front matter' between the lines starting with '---'. 
 
 ### Including links to files
 
-If you want to link to, for example, a report file, create a subdirectory `/reports/dragonborns` and copy them there. Now they get copied to the site and you can link to them as `[my first report](/reports/dragonborns/1-drag.cr)`.
+If you use images, .cr, .nr, or .txt files in your text they should be automatically handled. 
+
+If this does not work, it may help to instead create a subdirectory `/reports/dragonborns` (at the project root, not inside your dragonborns directory) and copy them there. Now they get copied to the site and you can link to them as `[my first report](/reports/dragonborns/1-drag.cr)`.
 
 ### Including cr maps
 
-With the 'shortcode' crmap you can include a cr directly into your file like so:
+With the 'shortcode' crmap, readnr, showorders etc. you can include a cr directly into your file like so:
 
     {% crmap './reports/dragonborns/123-drag.cr' %}
 
-See template/Auswertung_01.md for more details and examples.
+    {% orderfile '/reports/template/befehle-42.txt' %}
 
+    {% readnr '/reports/template/334-42.nr' %} 
+    {% shownr 'intro' %}
+
+See template/Auswertung_01.md for more details and examples.
 
 ### Seeing your content
 
