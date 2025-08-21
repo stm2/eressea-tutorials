@@ -8,9 +8,9 @@ Beispiele für die Darstellung von Karten, NRs, Befehlen mit crmap Shortcodes.
 
 ## Karte mit Details
 
-Relative Pfade funktionieren, aber die Quelldateien werden nicht automatisch zur erzeugten Seite kopiert, weswegen der Link zur cr-Datei tot ist.
+Relative Pfade funktionieren, Quelldateien sollten automatisch zur erzeugten Seite kopiert werden, wenn nicht ist der Link zur cr-Datei tot.
 
-{% crmap './reports/1234-bLa.cr' %} 
+{% crmap './reports/1234-bLa.cr' %}
 
 {% crmap_rdetails %}
 ...
@@ -20,7 +20,7 @@ Orders:
 
 ### Karte alleine
 
-Alle Dateien in /reports werden im Projekt automatisch zur erzeugten Seite kopiert ()`.eleventy.js:  eleventyConfig.addPassthroughCopy("reports");`) Hier funktioniert der Link.
+Alle Dateien in /reports werden im Projekt automatisch zur erzeugten Seite kopiert (`.eleventy.js:  eleventyConfig.addPassthroughCopy("reports");`) Hier funktioniert der Link.
 
 {% crmap '/reports/template/334-42.cr' '{ "crid": "map1", "details": false }' %}
 

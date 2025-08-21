@@ -942,11 +942,14 @@ module.exports = function (eleventyConfig) {
 
     const language = /.*Report for .*/.test(rawLines[0]) ? 'en' : 'de'; // crude language detection based on first line
 
+    debug(`Scanning ${file} for language ${language}`);
+
     // Find the section separator (a line containing only hyphens) that marks the start of regions
     let regionSectionStart = null;
     for (let i = 0; i < rawLines.length; i++) {
       if (separator.test(rawLines[i])) { regionSectionStart = i; break; }
     }
+    debug("region section start: ", regionSectionStart);
 
     // Header detection: detect only the specifically requested headings (exact match, case-insensitive)
     // These headers (if present) become bookmarks and capture the header line itself and everything
@@ -1027,6 +1030,7 @@ module.exports = function (eleventyConfig) {
       for (const ht of HEADER_TITLES[language]) {
         if (trimmed.toLowerCase() === ht.toLowerCase()) {
           const nm = `heading_${(sanitizeToken(ht))}`;
+          debug(`Found pre-defined header ${ht} at ${i}`);
           startIndices.push({ name: nm, index: i });
           if (firstHeader === 0) firstHeader = i;
           break;
@@ -1050,6 +1054,7 @@ module.exports = function (eleventyConfig) {
         if (/^\s{5}.*/.test(rawLines[i])) {
           const nm = `heading_${(sanitizeToken(trimmed))}`;
           if (!bookmarks[nm]) {
+            debug(`Found other header ${nm} at ${i}`);
             startIndices.push({ name: nm, index: i });
           }
         }
@@ -1087,6 +1092,7 @@ module.exports = function (eleventyConfig) {
 
           const key = ztok ? `region_${x}_${y}_${sanitizeToken(ztok)}` : `region_${x}_${y}`;
           // store bookmark spanning from this header line through the line before the separator
+          debug(`Found region ${key} from ${i + 1} to ${endIdx + 1}`);
           bookmarks[key] = { start: i + 1, end: endIdx + 1 };
           // startIndices.push({ name: key, index: i });
 
@@ -1108,6 +1114,7 @@ module.exports = function (eleventyConfig) {
             while (j2 <= endIdx && rawLines[j2].trim() !== '' && !separator.test(rawLines[j2])) j2++;
             const unitEnd = j2 <= endIdx ? j2 : endIdx;
             const unitKey = `unit_${unitId}`;
+            debug(`Found unit ${unitKey} from ${k + 1} to ${unitEnd + 1}`);
             bookmarks[unitKey] = { start: k + 1, end: unitEnd + 1 };
             // startIndices.push({ name: unitKey, index: k });
             // continue scanning after this unit block
@@ -1125,6 +1132,8 @@ module.exports = function (eleventyConfig) {
     }
 
     startIndicesToBookmarks(startIndices, rawLines, bookmarks);
+    debug(`Found regions / outro at ${regionSectionStart} and ${regionSectionEnd}`);
+
     if (regionSectionStart != regionSectionEnd) {
       bookmarks.regions = {
         start: regionSectionStart + 2,
@@ -1139,10 +1148,6 @@ module.exports = function (eleventyConfig) {
     }
 
     bookmarks.all = { start: 1, end: rawLines.length };
-
-    console.log(regionSectionStart);
-    console.log(startIndices);
-    console.log(bookmarks);
 
     // store
     pageState.nrids.add(nrid);
