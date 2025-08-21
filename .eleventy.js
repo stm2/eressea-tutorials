@@ -38,12 +38,14 @@ module.exports = async function (eleventyConfig) {
   });
 
   // dateReadable: server-side formatted date using the provided locale (e.g. page.locale)
-  // Usage: {{ page.date | dateReadable(page.locale) }} — falls back to 'de'
+  // Usage: {{ page.date | dateReadable(page.locale) }} — falls back to site locale or 'en'
   eleventyConfig.addFilter('dateReadable', (date, locale) => {
     if (!date) return '';
     let dt = date instanceof Date ? DateTime.fromJSDate(date) : DateTime.fromISO(String(date));
     if (!dt.isValid) dt = DateTime.fromJSDate(new Date(String(date)));
-    const useLocale = locale || 'en';
+
+    const site = require('./_data/site.json');
+    const useLocale = locale || site.locale || 'en';
     return dt.setLocale(useLocale).toLocaleString(DateTime.DATE_FULL);
   });
 
