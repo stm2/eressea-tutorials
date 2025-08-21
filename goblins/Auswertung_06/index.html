@@ -1,6 +1,8 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Eressea Beispielpartie - Goblins: Runde 6</title>
 
   <link rel="stylesheet" href="/tutorials/css/site.css">
@@ -18,33 +20,33 @@
   <article>
   <h1>Goblins: Runde 6</h1>
   <author>enno</author>,
-  <time datetime="2024-04-21T00:00:00.000Z">April 21, 2024</time>
+  <time datetime="2024-04-21T00:00:00.000Z">21. April 2024</time>
   <h1>Runde 6</h1>
 <h2>Die Auswertung</h2>
 <p>Die sechste Auswertung ist endlich da. Ein Blick in den nr-Report zeigt das wir noch eine Runde gegen Angriffe immun sind.</p>
 <p>Außerdem sehen wir in den Abschnitten <code>Rohstoffe und Produktion</code> und <code>Wirtschaft und Handel</code> das sich unsere Wirtschaft stetig entwickelt. Wir haben diese Runde 260 Silber verdient und Speere und Holz produziert.</p>
 <p>Der Übersicht halber gucken wir uns die Einheiten wieder direkt in Magellan an (durch das Hinzufügen des neuen cr-Reports vom Server werden Talentänderungen wieder rot hervorgehoben):</p>
-<p><img src="./a96e5f42560371383851fae3fdb2224be834730e.png" alt="Magellan Runde 6" title="Ansicht des Verzweigungsbaume aller Einheiten in Kodgur" integrity="sha1-a96e5f42560371383851fae3fdb2224be834730e"></p>
+<p><img src="./06_Magellan_Einheiten.png" alt="Magellan Runde 6" title="Ansicht des Verzweigungsbaume aller Einheiten in Kodgur"></p>
 <p>Wie wir sehen zahlt es sich aus, dass wir viel mit <code>LERNE AUTO</code> arbeiten und so meist mit Lehrern arbeiten. Wir haben jetzt schon eine ganze Menge Steuereintreiber Stufe 2 - auch wenn noch nicht alle davon ein Waffentalent beherrschen. Das können wir aber leicht binnen einer Runde ändern und haben ja ohnehin unseren Stangenwaffenlehrer Falmerkrieger (7), so dass die Lerner auch öfters direkt auf Stangenwaffen 2 aufsteigen. Unsere Silberversorgung bildet so auch eine rudimentäre Regionsverteidigung.</p>
 <p>Unser Bergfalmer ist dank +1 Bonus direkt auf Burgenbau 2 aufgestiegen. Außerdem ist einer der Schmiede auf Waffenbau 3 aufgestiegen und könnte jetzt weitere Waffen bauen, wie Schwerter und Armbrüste. Der neu rekrutierte Falmerschleicher (4yxL) ist trotz Lehrer mit LERNE AUTO leider nur auf Tarnung 2 gekommen (Goblins haben +1 auf Tarnung).</p>
 <p>Und auch der schweigsame Ork steht nach wie vor in Kodgur rum und bewundert offenbar unseren wirtschaftlichen Aufschwung.</p>
 <h2>Der grobe Plan</h2>
 <p>In Kodgur werden wir weiterhin Bäume fällen und Speere bauen. Damit werden die vorhandenen Steuereintreiber ausgerüstet und neue Falmerkrieger rekrutiert. Außerdem werden wir einen Handelsposten in unserer Heimat bauen, vielleicht werden wir ja doch noch zu Händlern, unseren Silbereinnahmen würde es sicherlich helfen.</p>
 <p>Ein weiteres Ziel ist endlich unsere Heimat zu verlassen und die Insel zu erkunden. Daher werden wir diese Runde direkt bewaffnete Scouts in die beiden angrenzenden Regionen Gosnad und Sorogokal senden. Außerdem lassen wir Falmerschleicher (4yxL) Reiten lernen, damit er dann ab nächster Runde die Insel erkunden kann.</p>
-<p><img src="./b50c3bdaf01218a26f2109c697b64e40ac7cc48b.png" alt="Karte Runde 6" title="Kodgur und Umland" integrity="sha1-b50c3bdaf01218a26f2109c697b64e40ac7cc48b"></p>
+<p><img src="./06_Karte.png" alt="Karte Runde 6" title="Kodgur und Umland"></p>
 <h2>Die Befehle</h2>
 <p>Die vier der sechs neuen Speere werden an die Falmerkrieger (26), (L1jq), (s235) und (gpn2) verteilt, die auch direkt den Befehl <code>TREIBE</code> bekommen. Ein weiterer Speer geht jeweils an Falmerkrieger (27) und (28). Das erscheint erstmal komisch, denn beide haben noch kein Waffentalent. Wir wollen diese beiden aber in die angrenzenden Regionen schicken und daher müssen die schon ihre Waffen mitbringen. Sie können dann vor Ort (ohne Lehrer) Stangenwaffen lernen und in der darauffolgenden Runde Steuern eintreiben. Beide Scouts bekommen insgesamt 30 Silber mit in die fremde Region. Eigentlich würden 20 Silber reichen (1x bewegen, 1x lernen), aber 10 Silber als Puffer Schaden auch nicht. Denn die Regionen könnten z.B. bewacht werden und dann können wir nicht direkt Steuern eintreiben.</p>
 <pre><code>EINHEIT 27;		Falmerkrieger [1,10$]
 ;bestaetigt
 NACH nw
-DEFAULT "LERNE Stangenwaffen"
+DEFAULT &quot;LERNE Stangenwaffen&quot;
 // Hochlandscout!
 // Achtung kann noch kein Waffentalent!
 
 EINHEIT 28;		Falmerkrieger [1,10$]
 ;bestaetigt
 NACH W
-DEFAULT "LERNE Stangenwaffen"
+DEFAULT &quot;LERNE Stangenwaffen&quot;
 // Gebirgsscout!
 // Achtung kann noch kein Waffentalent!
 </code></pre>
@@ -77,7 +79,7 @@ GIB 4yxL 1 Ring~der~Unsichtbarkeit
 <p>Die restlichen Einheiten machen unverändert das, was sie schon die ganze Zeit machen (Holz schlagen, Speere bauen, Wahrnehmung lernen und unterhalten).</p>
 <p>Mit dem restlichen Silber was wir noch haben, werden wir weiterhin wachsen und rekrutieren drei einzelne Goblins in drei Temp-Einheiten. Wir werden zwei Goblins <code>LERNE AUTO Steuereintreiben</code> und dem dritten <code>LERNE AUTO Bogenschießen</code> befehlen. Die Temp-Einheit stellen wir auch entsprechend direkt in die zweite <a href="https://wiki.eressea.de/index.php/Krieg#Kampfreihen">Kampfreihe</a>:</p>
 <pre><code>MACHE TEMP 31
-BENENNE EINHEIT "Falmerkrieger"
+BENENNE EINHEIT &quot;Falmerkrieger&quot;
 REKRUTIERE 1
 GRUPPE
 KÄMPFE HINTEN
@@ -264,7 +266,6 @@ Tags: goblin
 
 
 </main>
-<footer>© Eressea PBEM</footer>
-
-
-</body></html>
+<footer>&copy; Eressea PBEM</footer>
+</body>
+</html>

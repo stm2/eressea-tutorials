@@ -1,6 +1,8 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Eressea Beispielpartie - Goblins: Runde 1</title>
 
   <link rel="stylesheet" href="/tutorials/css/site.css">
@@ -18,7 +20,7 @@
   <article>
   <h1>Goblins: Runde 1</h1>
   <author>enno</author>,
-  <time datetime="2024-03-17T00:00:00.000Z">March 17, 2024</time>
+  <time datetime="2024-03-17T00:00:00.000Z">17. März 2024</time>
   <h1>Runde 1</h1>
 <h2>Die Auswertung</h2>
 <p>Der erste Report ist da. Wir haben eine zip-Datei mit drei Dateien erhalten:</p>
@@ -55,7 +57,7 @@
 <p>Aktuell besteht unsere Partei aus 10 Personen in einer Einheit. Das wir mit 10 Personen starten ist ein Startgeschenk der Goblinrasse. Maximal dürfen wir 2500 Einheiten in unserer Partei haben.</p>
 <p>Die nächste Zeile erklärt welche <a href="https://wiki.eressea.de/index.php/OPTION">Optionen</a> aktuell aktiviert sind.</p>
 <p>Außerdem ist unsere Partei noch die nächsten 6 Wochen immun und dadurch vor Angriffen, Diebstahl und ähnlichem geschützt. Wir haben also ein paar Runden Zeit um uns eine Waffe zu bauen und wenigstens unsere Heimat zu bewachen.</p>
-<p>Der Server hat außerdem das Passwort "exID6fzR" generiert. Das werden wir in unserem ersten Zug durch etwas einfacher zu merkendes ersetzen.</p>
+<p>Der Server hat außerdem das Passwort &quot;exID6fzR&quot; generiert. Das werden wir in unserem ersten Zug durch etwas einfacher zu merkendes ersetzen.</p>
 <p>Nach dem Kopf der Auswertung kommt endlich unsere erste Region und unsere erste Einheit:</p>
 <pre><code>    ------------------------------------------------------------------------------
 
@@ -83,11 +85,11 @@
       * Einheit q8hq (q8hq), 10 Goblins, aggressiv, hat: 10 Holz, 2400 Silber,
         Ring der Unsichtbarkeit, 4 Steine.
 </code></pre>
-<p>Unsere Startregion ist ein Wald namens "Kodgur". Außerdem bekommen wir Infos über die Anzahl Bäume, Bauern und Pferde, sowie das Regionssilber in der Region, also der Silberbestand der Bauern vor Ort. Zudem erfahren wir, welche Nachbarregionen es um uns herum gibt.</p>
+<p>Unsere Startregion ist ein Wald namens &quot;Kodgur&quot;. Außerdem bekommen wir Infos über die Anzahl Bäume, Bauern und Pferde, sowie das Regionssilber in der Region, also der Silberbestand der Bauern vor Ort. Zudem erfahren wir, welche Nachbarregionen es um uns herum gibt.</p>
 <p>Außerdem ein paar Infos zu Handelsgütern, die uns erstmal egal sein können, weil Goblins mit -1 eher schlecht im Handeln sind und man außerdem einen Handeslposten dazu benötigt. Das muss uns also erst in ein paar Runden interessieren.</p>
 <p>Danach kommt noch eine Statistik für unsere Region, wo wir beispielsweise sehen, wieviele Rekruten wir maximal anwerben können und was wir aktuell in der Region haben.</p>
-<p>Denn hier steht unsere erste <code>Einheit q8hq</code>, die aus 10 Goblins besteht. Die Einheit hat den Kampfstatus aggressiv, besitzt 10 Holz, 2400 Silber, 4 Steine und als besonderes Startgeschenk für Goblinvölker einen "Ring der Unsichtbarkeit".</p>
-<p>Am Ende des Reports findet sich noch der Abschnitt "Aktueller Status" der bei uns aktuell noch leer ist. Wenn wir im Verlauf andere Völker treffen und sogar Freunde werden, dann wird hier der <a href="https://wiki.eressea.de/index.php/HELFE">Helfe Status</a> zu unseren Nachbarn gelistet. Abschließend werden noch die Email-Adressen aller Völker gelistet, die wir in unserer aktuellen Auswertung sehen. Das sind aktuell nur wir selbst.</p>
+<p>Denn hier steht unsere erste <code>Einheit q8hq</code>, die aus 10 Goblins besteht. Die Einheit hat den Kampfstatus aggressiv, besitzt 10 Holz, 2400 Silber, 4 Steine und als besonderes Startgeschenk für Goblinvölker einen &quot;Ring der Unsichtbarkeit&quot;.</p>
+<p>Am Ende des Reports findet sich noch der Abschnitt &quot;Aktueller Status&quot; der bei uns aktuell noch leer ist. Wenn wir im Verlauf andere Völker treffen und sogar Freunde werden, dann wird hier der <a href="https://wiki.eressea.de/index.php/HELFE">Helfe Status</a> zu unseren Nachbarn gelistet. Abschließend werden noch die Email-Adressen aller Völker gelistet, die wir in unserer aktuellen Auswertung sehen. Das sind aktuell nur wir selbst.</p>
 <pre><code>    ------------------------------------------------------------------------------
     
                                    Aktueller Status
@@ -108,7 +110,7 @@
 <h2>Die Befehle</h2>
 <p>Für das Erstellen der Befehle bietet sich die Zugvorlage vom Server an. Diese Datei kann man direkt in einem Texteditor bearbeiten.</p>
 <pre><code>    ; Vorlage für den nächsten Zug:
-    PARTEI mgkw "exID6fzR"
+    PARTEI mgkw &quot;exID6fzR&quot;
     
     ; ECHECK -l -w4 -r40 -v4.01
     
@@ -121,12 +123,12 @@
 </code></pre>
 <p>Der Aufbau der Befehle ist immer gleich. Mit <code>;</code> wird ein Kommentar eingeleitet, d.h. der nachfolgende Text in dieser Zeile wird vom Server ignoriert. Die Befehle müssen immer mit dem Schlüsselwort <code>PARTEI</code> beginnen, gefolgt von der Parteinummer und dem Passwort. Beides hat der Server in unserer Zugvorlage bereits eingetragen. Die Zeile mit dem <code>ECHECK</code>-Kommentar ist für das externe Programm <a href="https://wiki.eressea.de/index.php/ECheck">ECheck</a> mit dem man seine Befehle vorab testen kann, ob die Syntax okay ist und der Server sie versteht. Danach folgt für jede Region, in der mindestens eine Einheit steht ein <code>REGION</code> Block mit den Koordinaten. Danach werden alle Einheiten gelistet, die in dieser Region stehen. Unterhalb der Zeile <code>EINHEIT q8hq;    Einheit q8hq [10,2400$]</code> kann man nun in jede neue Zeile <a href="https://wiki.eressea.de/index.php/Befehl">Befehle</a> für eben diese Einheit schreiben. Das Schlüsselwort <code>NÄCHSTER</code> beendet die Befehle, alles danach wird vom Server ignoriert.</p>
 <h3>Magellan</h3>
-<p>Wie schon erwähnt, werden wir die Befehle für dieses Goblin Tutorial in <a href="https://magellan.narabi.de/index_de.php">Magellan</a> machen. Daher werden wir nicht mit der Zugvorlage arbeiten, sondern mit dem Computerreport (*.cr). Wir öffnen also Magellan und laden die Datei "1-mgkw.cr" ein. Magellan erkennt dann direkt, dass in der Auswertung ein neues Passwort festgelegt wurde und fragt ob es dieses für die Zugerstellung benutzen soll.</p>
-<p>In Magellan sieht man nun eine Karte dargestellt. Außerdem sieht man im Übersichtsfenster einen Baum mit allen Regionen, in denen wir aktuell Einheiten haben. In unserem Fall eben nur "Kodgur". Jede Region kann man wiederum aufklappen und sieht dann den Einheitenbaum in dieser Region. In unserem Fall ist das natürlich bisher nur Einheit q8hq. Im Fenster "Befehle" kann man nun ganz ähnlich wie bei Benutzung der Zugvorlage vom Server die Befehle schreiben für die aktuell angewählte Einheit. Ein wesentlicher Unterschied zur Zugvorlage ist das Erstellen neuer <a href="https://wiki.eressea.de/index.php/MACHE#Einheiten">temp-Einheiten</a>, die direkt über einen Klick auf "+Temp" und das folgende Untermenu erstellt werden. Neue temp-Einheiten erscheinen dann direkt im Übersichtsfenster in der Baumstruktur der Einheiten in der Region.</p>
-<p><img src="./5f1ef9432386a5c4adbf04e2d49c35d2a026c92d.png" alt="Magellan Runde 1" title="Beispielhafte Magellan-Ansicht beim ersten Laden des Computerreports" integrity="sha1-5f1ef9432386a5c4adbf04e2d49c35d2a026c92d"></p>
+<p>Wie schon erwähnt, werden wir die Befehle für dieses Goblin Tutorial in <a href="https://magellan.narabi.de/index_de.php">Magellan</a> machen. Daher werden wir nicht mit der Zugvorlage arbeiten, sondern mit dem Computerreport (*.cr). Wir öffnen also Magellan und laden die Datei &quot;1-mgkw.cr&quot; ein. Magellan erkennt dann direkt, dass in der Auswertung ein neues Passwort festgelegt wurde und fragt ob es dieses für die Zugerstellung benutzen soll.</p>
+<p>In Magellan sieht man nun eine Karte dargestellt. Außerdem sieht man im Übersichtsfenster einen Baum mit allen Regionen, in denen wir aktuell Einheiten haben. In unserem Fall eben nur &quot;Kodgur&quot;. Jede Region kann man wiederum aufklappen und sieht dann den Einheitenbaum in dieser Region. In unserem Fall ist das natürlich bisher nur Einheit q8hq. Im Fenster &quot;Befehle&quot; kann man nun ganz ähnlich wie bei Benutzung der Zugvorlage vom Server die Befehle schreiben für die aktuell angewählte Einheit. Ein wesentlicher Unterschied zur Zugvorlage ist das Erstellen neuer <a href="https://wiki.eressea.de/index.php/MACHE#Einheiten">temp-Einheiten</a>, die direkt über einen Klick auf &quot;+Temp&quot; und das folgende Untermenu erstellt werden. Neue temp-Einheiten erscheinen dann direkt im Übersichtsfenster in der Baumstruktur der Einheiten in der Region.</p>
+<p><img src="./01_Magellan_Ansicht.png" alt="Magellan Runde 1" title="Beispielhafte Magellan-Ansicht beim ersten Laden des Computerreports"></p>
 <p>Am Ende erstellt aber auch Magellan <em>nur</em> eine Textdatei, die der Zugvorlage vom Server sehr ähnlich sieht. Diese Befehle kann man dann per Mail an den Server senden oder direkt aus Magellan versenden oder auf den Server hochladen.</p>
 <p>Wir gucken uns diese Befehlsdatei jetzt gemeinsam an und erklären was wir warum machen, und wie das helfen soll unseren zuvor erklärten Plan umzusetzen. Die ersten Zeilen der Befehlsdatei sehen aus wie in der Zugvorlage, Magellan hat ledigleich ein paar Infos ergänzt, die uns im Detail aber nicht interessieren müssen. Wichtig ist, dass das korrekte Passwort in der ersten Zeile steht:</p>
-<pre><code>    ERESSEA mgkw "exID6fzR"
+<pre><code>    ERESSEA mgkw &quot;exID6fzR&quot;
     ;TIMESTAMP 1697574861844
     ;Magellan Version 2.1.0-791.rc
     ; ECHECK -r40 -s -l -w4 -v4.3.2
@@ -137,9 +139,9 @@
     ; ECheck Lohn 11
     EINHEIT q8hq;		Einheit q8hq [10,2400$]
     ;bestaetigt
-    PASSWORT "GoblinsSindEinKulturvolk"
-    BENENNE PARTEI "Falmer"
-    BENENNE EINHEIT "Falmerschleicher"
+    PASSWORT &quot;GoblinsSindEinKulturvolk&quot;
+    BENENNE PARTEI &quot;Falmer&quot;
+    BENENNE EINHEIT &quot;Falmerschleicher&quot;
     PRÄFIX Höhlen
     KÄMPFE FLIEHE
     LERNE AUTO Tarnung
@@ -151,16 +153,16 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
  GIB TEMP 5 6 Holz
  GIB TEMP 5 600 Silber
  MACHE TEMP 5
- BENENNE EINHEIT "Falmerschmiede"
+ BENENNE EINHEIT &quot;Falmerschmiede&quot;
  GRUPPE
  KÄMPFE FLIEHE
  LERNE Auto	Waffenbau
  ;bestaetigt_temp
  ENDE
 </code></pre>
-<p>Eine weitere Person übergeben wir in die neue temp-Einheit <code>TEMP 6</code>. Wir nennen die Einheit "Wilder Falmer" und lassen die Einheit Wahrnehmung lernen. Es ist sehr wichtig, dass man immer gute Wahrnehmer hat, da man sonst Gefahr läuft, dass Einheiten unbemerkt durch die eigenen Regionen laufen oder uns gar beklauen könnten. Dabei sind wir doch die Goblins! Einheit <code>TEMP 6</code> bekommt neben der einen Person noch 50 Silber, da wir im ungünstigsten Fall 5 Runden auf Silbereinnahmen warten müssen. Die Befehlszeile mit <code>//</code> zu Beginn leitet einen permanenten Kommentar ein. Solche Befehle werden in die Zugvorlage übernommen und werden in der kommenden Runde noch bei der Einheit stehen. Kommentare mit <code>;</code> eingeleitet werden hingegen vom Server zunächst ignoriert und anschlließend gelöscht. Sie tauchen also nicht in den Befehlen der Einheit für die nächste Woche auf.</p>
+<p>Eine weitere Person übergeben wir in die neue temp-Einheit <code>TEMP 6</code>. Wir nennen die Einheit &quot;Wilder Falmer&quot; und lassen die Einheit Wahrnehmung lernen. Es ist sehr wichtig, dass man immer gute Wahrnehmer hat, da man sonst Gefahr läuft, dass Einheiten unbemerkt durch die eigenen Regionen laufen oder uns gar beklauen könnten. Dabei sind wir doch die Goblins! Einheit <code>TEMP 6</code> bekommt neben der einen Person noch 50 Silber, da wir im ungünstigsten Fall 5 Runden auf Silbereinnahmen warten müssen. Die Befehlszeile mit <code>//</code> zu Beginn leitet einen permanenten Kommentar ein. Solche Befehle werden in die Zugvorlage übernommen und werden in der kommenden Runde noch bei der Einheit stehen. Kommentare mit <code>;</code> eingeleitet werden hingegen vom Server zunächst ignoriert und anschlließend gelöscht. Sie tauchen also nicht in den Befehlen der Einheit für die nächste Woche auf.</p>
 <pre><code>    MACHE TEMP 6
-    BENENNE EINHEIT "Wilder Falmer"
+    BENENNE EINHEIT &quot;Wilder Falmer&quot;
     GRUPPE
     KÄMPFE FLIEHE
     LERNE Wahrnehmung
@@ -173,7 +175,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
 <p>Als nächstes machen wir zwei Einheiten, die wir zukünftig als Lehrer nutzen wollen. Wir planen den Bauern der Region mit Steuereintreibern das Silber aus den Taschen zu ziehen. Ein Steuereintreiber benötigt natürlich das Talent <a href="https://wiki.eressea.de/index.php/Liste_der_Talente">Steuereintreiben</a> und natürlich ein Waffentalent. Wir werden uns erstmal auf Speere konzentrieren, da diese leicht zu bauen sind und wenig Ressourcen brauchen. Für Speere benötigt man das Talent Stangenwaffen. Welches Waffentalent man für welche Waffe benötigt, findet man in den <a href="https://wiki.eressea.de/index.php/Kriegstabellen#Waffeneigenschaften">Kriegstabellen</a>. Daher erschaffen wir als nächstes die beiden temp-Einheiten <code>TEMP 7</code> und <code>TEMP 8</code>, übergeben jeweils eine Person und lassen die neuen Einheiten Stangenwaffen, bzw Steuereintreiben lernen. Um sicher nicht hungern zu müssen, übergeben wir wie gehabt jeweils 50 Silber.</p>
 <p>Für die bessere Lesbarkeit sind diesmal die Befehle der temp-Einheiten eingerückt. Magellan macht das zwar standardmäßig nicht, wenn man die Befehle aber statt dessen händisch in einem Texteditor und mit Hilfe der Zugvorlage erstellt, kann das helfen die Übersicht zu behalten. Dem Server sind vorangestellte Leerzeichen egal.</p>
 <pre><code>    MACHE TEMP 7
-     BENENNE EINHEIT "Falmerkrieger"
+     BENENNE EINHEIT &quot;Falmerkrieger&quot;
      GRUPPE
      KÄMPFE AGGRESSIV
      LERNE AUTO Stangenwaffen
@@ -184,7 +186,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
     GIB TEMP 7 50 Silber
 
     MACHE TEMP 8
-     BENENNE EINHEIT "Falmerkrieger"
+     BENENNE EINHEIT &quot;Falmerkrieger&quot;
      GRUPPE
      KÄMPFE AGGRESSIV
      LERNE AUTO Steuereintreiben
@@ -199,7 +201,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
 <pre><code>    GIB TEMP 9 1000 Silber ; Rekrutierungskosten
     
     MACHE TEMP 9
-    BENENNE EINHEIT "Falmerkrieger"
+    BENENNE EINHEIT &quot;Falmerkrieger&quot;
     REKRUTIERE 10
     LERNE AUTO Steuereintreiben
     // Einheit zerteilen, damit wir die Streuung nach T2 ausnutzen
@@ -210,7 +212,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
 </code></pre>
 <p>Damit sind 1750 Silber verplant, es verbleiben 650 Silber. Als nächstes machen wir eine temp-Einheit die uns Holz schlagen soll, damit wir Speere bauen und unsere Steuereintreiber bewaffnen können. Wir haben 6 Waffenbauer, planen also mit 6 Speeren pro Runde, also 6 Holz pro Runde. Die Waffenbauer müssen aber bis Stufe 2 lernen, außerdem haben wir 10 Holz womit die Waffenbauer loslegen können. Daher machen wir erstmal nur 3 Holzfäller und planen diese ebenfalls bis Stufe 2 lernen zu lassen. Damit können die 3 Holzfäller exakt die gewünschten 6 Holz pro Runde schlagen. Damit wir diesen Gedanken nicht vergessen, schreiben wir uns das als dauerhaften <code>//</code>-Kommentar direkt in die Befehle. Und wieder 300 Silber weniger.</p>
 <pre><code>    MACHE TEMP 10
-    BENENNE EINHEIT "Waldfalmer"
+    BENENNE EINHEIT &quot;Waldfalmer&quot;
     REKRUTIERE 3
     GRUPPE
     KÄMPFE AGGRESSIV
@@ -222,7 +224,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
 </code></pre>
 <p>Mit dem restlichen Silber machen wir uns noch zwei einzelne Goblins. Zunächst einen einzelnen Unterhalter. Goblins starten hier mit einem Malus von Unterhaltung -1. Allerdings brauchen Unterhalter keine Waffen und zum anderen können Unterhalter durch Anwendung des Talents weiter aufsteigen. Steuereintreiber haben diesen Luxus nicht, diese müssen lernen um besser zu werden. Der einzelne Unterhalter wird für uns aber erst dann interessant, wenn er Unterhaltung 2 erreicht. Denn dann können wir ihn als Lehrer benutzen, denn ein Lehrer muss mindestens 2 Stufen besser sein als der Schüler. Mit Unterhaltung 2 können wir also ungelernte Rekruten in Unterhaltung <a href="https://wiki.eressea.de/index.php/LEHRE">LEHREN</a> und so den Malus etwas kompensieren. Bis die temp-Einheit Stufe 2 erreicht kann es aber eine Weile dauern. Mit einer Woche lernen steigt die Einheit sicher eine Stufe auf und würde Unterhaltung 1 erreichen, wegen des Malus bleibt der Goblin aber effektiv auf Unterhaltung 0. Er muss also weiter lernen. Bis Stufe 2 und damit effektiv Stufe 1 als Goblin kann es 1 bis 3 weitere Runden dauern. Wir wollen aber bis <em>effektiv</em> Unterhaltung 2, also Stufe 3 vor Anwendung des Malus. Der Aufstieg von Stufe 2 nach 3 kann wiederum 1 bis 5 Wochen dauern. Bis der Goblin also effektiv bei Unterhaltung 2 landet dauert es bestenfalls 3 Runden (1+1+1) und im ungünstigsten Fall 9 Runden (1+3+5). Im <a href="https://wiki.eressea.de/index.php/Talente#Talente_erlernen">Mittel</a> sollte es 6 Runden dauern, aber bei nur einer Einheit, kann man sich nicht auf den Mittelwert verlassen und sollte besser nicht die letzte Silbermünze darauf verwetten. Wir geben der Einheit 100 Silber wohlwissen, dass davon aber auch noch 40 Silber für die Rekrutierungskosten abgehen.</p>
 <pre><code>    MACHE TEMP 11
-    BENENNE EINHEIT "Falmer mit roter Nase"
+    BENENNE EINHEIT &quot;Falmer mit roter Nase&quot;
     REKRUTIERE 1
     GRUPPE
     KÄMPFE AGGRESSIV
@@ -234,7 +236,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
 </code></pre>
 <p>Als letztes erschaffen wir noch eine temp-Einheit und lassen den Goblin Bergbau lernen. Denn auch eine Ebene, bzw. ein Wald kann Eisen und/oder Steine beherbergen. Man benötigt allerdings das entsprechende Talent um ein Vorkommen zu entdecken. Wenn wir Glück haben finden wir in Kodgur Eisen und können so zukünftig auch Schwerter, Schilde oder Rüstungen direkt in unserer Heimatregion produzieren. Die Einheit bekommt 100 Silber zum Rekrutieren und zur Versorgung für die ersten Runden.</p>
 <pre><code>    MACHE TEMP 12
-    BENENNE EINHEIT "Bergfalmer"
+    BENENNE EINHEIT &quot;Bergfalmer&quot;
     REKRUTIERE 1
     GRUPPE
     KÄMPFE AGGRESSIV
@@ -244,9 +246,9 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
     ENDE
     GIB TEMP 12 100 Silber ; Rekrutierungskosten
 </code></pre>
-<p>Die restlichen 150 Silber behalten wir bei unserer Starteinheit. Ebenso die Steine und den <a href="https://wiki.eressea.de/index.php/Zauberbeschreibungen_E2#Erschaffe_einen_Ring_der_Unsichtbarkeit">Ring der Unsichtbarkeit</a>. Eigentlich hätten wir noch <code>ZEIGEN "Ring der Unsichtbarkeit"</code> bei der Starteinheit befehlen sollen, haben wir aber leider vergessen. Der Server hätte uns dann ein Beschreibung des Rings gegeben und uns verraten, dass dieser den Träger (eine Person pro Ring) vor unliebsamen Blicken verbergen kann. Eine Person mit Ring ist nur durch ein <a href="https://wiki.eressea.de/index.php/Zauberbeschreibungen_E2#Erschaffe_ein_Amulett_des_wahren_Sehens">"Amulett des wahren Sehens"</a> zu entdecken; einem weiteren magischen Gegenstand.</p>
+<p>Die restlichen 150 Silber behalten wir bei unserer Starteinheit. Ebenso die Steine und den <a href="https://wiki.eressea.de/index.php/Zauberbeschreibungen_E2#Erschaffe_einen_Ring_der_Unsichtbarkeit">Ring der Unsichtbarkeit</a>. Eigentlich hätten wir noch <code>ZEIGEN &quot;Ring der Unsichtbarkeit&quot;</code> bei der Starteinheit befehlen sollen, haben wir aber leider vergessen. Der Server hätte uns dann ein Beschreibung des Rings gegeben und uns verraten, dass dieser den Träger (eine Person pro Ring) vor unliebsamen Blicken verbergen kann. Eine Person mit Ring ist nur durch ein <a href="https://wiki.eressea.de/index.php/Zauberbeschreibungen_E2#Erschaffe_ein_Amulett_des_wahren_Sehens">&quot;Amulett des wahren Sehens&quot;</a> zu entdecken; einem weiteren magischen Gegenstand.</p>
 <p>Gerade zu Beginn kann der Ring sehr hilfreich sein um unbemerkt die Insel zu erkunden. Allerdings haben wir bisher keine Kundschafter rekrutiert und los geschickt. Wir wollen erstmal alles Silber in den Aufbau einer gesunden Silberwirtschaft stecken. Auch wenn es dem Forscher und Erkunder in unserem Goblinherzen natürlich schwer fällt, keine Einheit in den benachbarten Berg oder ins Hochland zu entsenden. Aber das können wir ja in einer der nächsten Runden nachholen.</p>
-<p>Das Schlüsselwort "Nächster" beendet unsere Befehlsdatei - Magellan fügt das automatisch ans Ende der Befehlsdatei an.</p>
+<p>Das Schlüsselwort &quot;Nächster&quot; beendet unsere Befehlsdatei - Magellan fügt das automatisch ans Ende der Befehlsdatei an.</p>
 <pre><code>    NÄCHSTER
 </code></pre>
 <p>Noch ein letzter Kommentar, weil wir scheinbar so viel Silber zurückhalten, und nicht alles bis auf die letzte Silbermünze verplanen. Wir planen hier bewusst erstmal mit dem ungünstigsten Verlauf. Also, dass unsere Waffenabuer viel Pech beim Stufenaufstieg haben und wir mindestens 5 Runden nur Ausgaben, aber keine Einnahmen haben. Jede zusätzliche Person kostet jede Runde zusätzliche 10 Silber und muss natürlich auch erstmal für 40 Silber rekrutiert werden. Außerdem haben wir absichtlich Lehrer ausgebildet. Sollten wir also mehr Glück haben und unsere Einheiten schneller aufsteigen und wir früher Silber verdienen, dann können wir leicht neue Personen rekrutieren und diese mit unseren Lehrern eventuell direkt lehren. Eventuell verlieren wir also gar nicht allzuviel Lernzeit, sparen aber in jedem Fall Silber.</p>
@@ -258,7 +260,7 @@ Diese temp-Einheit sollen unsere ersten Waffenbauer werden. Geplant ist bald jed
                           tutorial@drachensgrab.de zu senden.
 </code></pre>
 <p>An dieser Stelle ist aber wichtig hervorzuheben, dass hier die Adresse angegeben wurde, die extra für dieses Tutorial genutzt wurde, das parallel zum <em>echten</em> Erressea gelaufen ist. Für das Original-Eressea lautet die korrekte Adresse <strong>eressea-server@eressea.kn-bremen.de</strong> und der Betreff dazu lautet <strong>ERESSEA 2 BEFEHLE</strong>.</p>
-<p>Man kann die Befehle in Magellan über <code>Datei &gt; Befehle speichern ...</code> in eine Textdatei speichern und von dort in eine Email kopieren oder über <code>Datei &gt; Befehle kopieren</code> die Befehle direkt aus der Zwischenablage in eine Email kopieren. Beim Versand der Email sollte man darauf achten, dass nur die Befehle im Mailbody stehen und dass man die Mail als "nur Text" o.ä. versendet - also insbesondere ohne html oder ähnlichem.</p>
+<p>Man kann die Befehle in Magellan über <code>Datei &gt; Befehle speichern ...</code> in eine Textdatei speichern und von dort in eine Email kopieren oder über <code>Datei &gt; Befehle kopieren</code> die Befehle direkt aus der Zwischenablage in eine Email kopieren. Beim Versand der Email sollte man darauf achten, dass nur die Befehle im Mailbody stehen und dass man die Mail als &quot;nur Text&quot; o.ä. versendet - also insbesondere ohne html oder ähnlichem.</p>
 <p>Außerdem kann man die Befehle auch <a href="https://wiki.eressea.de/index.php/Befehle_von_Magellan_verschicken">direkt aus Magellan versenden</a> wenn man seinen Magellan Zugang zum Mailkonto gibt. Alternativ kann man die Befehle auch aus Magellan per Upload an den Server senden, hierbei bekommt man allerdings keine Befehls-Empfangsbestätigung vom Server per Mail.</p>
 <p>Hier nochmal <a href="https://wiki.eressea.de/index.php/Befehle_einschicken#Wie_man_Befehle_einschickt,_und_was_man_daf%C3%BCr_bekommt">zusätzliche Infos zum Einsenden der Befehle</a> aus dem Wiki. Man sollte - gerade bei der ersten Zugabgabe - unbedingt auf eine Eingangsbestätigung des Servers warten, aus der hervorgeht, dass der Server die Befehle erhalten hat und verarbeiten konnte. Nichts ist ärgerlicher, als wenn gerade am Anfang irgendwas schief geht. Im Zweifelsfall kann man auch im <a href="https://discord.gg/KT5Fffh">discord</a> nachfragen. Dort hilft einem sicher gerne jemand weiter.</p>
 
@@ -397,7 +399,6 @@ Tags: goblin
 
 
 </main>
-<footer>© Eressea PBEM</footer>
-
-
-</body></html>
+<footer>&copy; Eressea PBEM</footer>
+</body>
+</html>
