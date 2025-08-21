@@ -1,12 +1,14 @@
 const crs = require('./crs/crs.js');
 const { DateTime } = require('luxon');
 
-const pageAssetsPlugin = require('eleventy-plugin-page-assets');
-
-module.exports = function (eleventyConfig) {
+module.exports = async function (eleventyConfig) {
 
   // https://www.11ty.dev/docs/languages/markdown/#indented-code-blocks
   eleventyConfig.amendLibrary("md", (mdLib) => mdLib.enable("code"));
+
+  // const pageAssetsPlugin = require('eleventy-plugin-page-assets');
+  let pageAssetsPlugin = await import('eleventy-plugin-page-assets');
+  pageAssetsPlugin = pageAssetsPlugin.default || pageAssetsPlugin;
 
   // https://github.com/victornpb/eleventy-plugin-page-assets
   eleventyConfig.addPlugin(pageAssetsPlugin, {
@@ -17,6 +19,12 @@ module.exports = function (eleventyConfig) {
     recursive: true,
     silent: true,
   });
+
+  // This replaces the {{ xyz | url }} filter by applying pathPrefix properly
+  let { HtmlBasePlugin } = await import("@11ty/eleventy");
+  HtmlBasePlugin = HtmlBasePlugin.default || HtmlBasePlugin;
+  eleventyConfig.addPlugin(HtmlBasePlugin);
+
 
   eleventyConfig.addFilter('dateIso', date => {
     if (!date) return '';

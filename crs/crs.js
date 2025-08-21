@@ -164,14 +164,11 @@ module.exports = function (eleventyConfig) {
   //   1. Root-relative (starts with '/'): resolved against project root (Eleventy's input dir)
   //   2. Relative: resolved against the directory of the calling template file
   // Returns { fsPath, publicPath, relPath } or { error }
-  // publicPath is prefixed with optional deployment path prefix (env ELEVENTY_PATH_PREFIX) and always begins with '/'.
+  // publicPath is a root-relative path beginning with '/<relPath>' suitable for use in generated HTML.
   function resolveUserPath(spec, ctx) {
     if (!spec || typeof spec !== 'string') return { error: 'missing path' };
     // Normalize Windows backslashes just in case
-    spec = spec.replace(/\\/g, '/');
-    let pathPrefix = process.env.ELEVENTY_PATH_PREFIX || '';
-    if (pathPrefix && pathPrefix !== '/' && pathPrefix.endsWith('/')) pathPrefix = pathPrefix.slice(0, -1);
-    if (pathPrefix === '/') pathPrefix = '';
+    spec = spec.replace(/\\/g, '/').trim();
     const projectRoot = process.cwd();
     // Base directory derived from the template invoking the shortcode
     let baseDir = projectRoot;
@@ -181,6 +178,7 @@ module.exports = function (eleventyConfig) {
         baseDir = path.dirname(tplPath);
       }
     } catch (_) { /* ignore */ }
+
     const isRootRel = spec.startsWith('/');
     const cleaned = isRootRel ? spec.replace(/^\/+/, '') : spec;
     const candidateFs = path.resolve(isRootRel ? projectRoot : baseDir, cleaned);
@@ -190,10 +188,13 @@ module.exports = function (eleventyConfig) {
       return { error: 'path escapes project root' };
     }
     const relPath = path.relative(projectRoot, candidateFs).split(path.sep).join('/');
-    const publicPath = isRootRel ? (pathPrefix ? pathPrefix : '') + '/' + relPath : spec;
+    // publicPath: always root-relative and start with '/'
+    const publicPath = spec;  // '/' + relPath;
+
+    console.log(`rup ${spec} `, ctx?.page?.inputPath, candidateFs, publicPath, relPath);
+    console.log({ fsPath: candidateFs, publicPath, relPath });
     return { fsPath: candidateFs, publicPath, relPath };
   }
-
 
   // Validation helper (stateless)
   function validateCrid(id) {
@@ -524,7 +525,6 @@ module.exports = function (eleventyConfig) {
     }
   }
 
-
   // ================= Shortcode function implementations =================
 
   function crmapShortcode(file, optionsJson) {
@@ -644,7 +644,7 @@ module.exports = function (eleventyConfig) {
         `<div id="tooltip_${crid}" class="cr-tooltip"></div>` +
         `</figure>`;
     } catch (e) {
-      debug(`Error processing file: ${filePath} `, e);
+      debug(`Error processing file: ${file} `, e);
       return `<div style=\"max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;\">Error: ${escapeHtml(e.message)}</div>`;
     }
   }
