@@ -4,7 +4,7 @@ const path = require('path');
 const { start } = require('repl');
 
 // Library version (update when changing public shortcode behavior)
-const CRS_VERSION = '0.2.1';
+const CRS_VERSION = '0.2.2';
 // Export version for external use (e.g., in layouts via require) and add as global data below
 module.exports.CRS_VERSION = CRS_VERSION;
 
@@ -150,6 +150,13 @@ module.exports = function (eleventyConfig) {
   const DEBUG = process.env.CRS_DEBUG === '1';
   function debug(...args) { if (DEBUG) console.log('[crs]', ...args); }
 
+  // warn(msg[, html_msg]) -> logs a console warning and returns an error HTML string.
+  function warn(msg, html_msg) {
+    try { console.warn('[crs]', msg); } catch (e) { /* ignore */ }
+    html_msg = html_msg || String(msg);
+    return `<div class="cr-error" style="color:#a00; font-family:monospace;">${escapeHtml(String(html_msg))}</div>`;
+  }
+
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -191,8 +198,6 @@ module.exports = function (eleventyConfig) {
     // publicPath: always root-relative and start with '/'
     const publicPath = spec;  // '/' + relPath;
 
-    console.log(`rup ${spec} `, ctx?.page?.inputPath, candidateFs, publicPath, relPath);
-    console.log({ fsPath: candidateFs, publicPath, relPath });
     return { fsPath: candidateFs, publicPath, relPath };
   }
 
@@ -573,10 +578,10 @@ module.exports = function (eleventyConfig) {
             }
           }
         } catch (e) {
-          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Invalid JSON options: ${escapeHtml(e.message)}</div>`;
+          return warn(`crmap: invalid JSON options: ${e.message}`);
         }
       } else {
-        return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Options must be a JSON string</div>`;
+        return warn('crmap: options must be a JSON string');
       }
       if (requestedCrid === '') requestedCrid = undefined; // force auto
 
@@ -585,13 +590,11 @@ module.exports = function (eleventyConfig) {
         crid = requestedCrid.toString();
         const valid = validateCrid(crid);
         if (!valid.ok) {
-          console.warn(valid.message);
-          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${valid.message}</div>`;
+          return warn('crmap: ' + valid.message);
         }
         if (pageState.crids.has(crid)) {
-          const msg = `Duplicate crid '${crid}' already used on this page.`;
-          console.warn(msg);
-          return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">${msg}</div>`;
+          const msg = `crmap: Duplicate crid '${crid}' already used on this page.`;
+          return warn(msg);
         }
         debug(`Processing CR file with provided crid=${crid}: ${file}`);
       } else {
@@ -603,11 +606,10 @@ module.exports = function (eleventyConfig) {
       pageState.lastCrid = crid;
       const resolved = resolveUserPath(file, this);
       if (resolved.error) {
-        return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">Path error: ${escapeHtml(resolved.error)} (${escapeHtml(file)})</div>`;
+        return warn(`crmap: path error: ${resolved.error} ${file}`);
       }
       if (!fs.existsSync(resolved.fsPath)) {
-        debug(`File not found: ${resolved.fsPath}`);
-        return `<div style=\"max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;\">File not found: ${escapeHtml(file)}</div>`;
+        return warn(`crmap: file not found: ${file} -> ${resolved.fsPath}`, `crmap: file not found: ${file}`);
       }
       const reportName = path.basename(resolved.fsPath, path.extname(resolved.fsPath));
       const report = Report.parse(resolved.fsPath, crid, reportName, detailsOption, zOption);
@@ -644,8 +646,7 @@ module.exports = function (eleventyConfig) {
         `<div id="tooltip_${crid}" class="cr-tooltip"></div>` +
         `</figure>`;
     } catch (e) {
-      debug(`Error processing file: ${file} `, e);
-      return `<div style=\"max-width:100%; max-height:600px; overflow:auto; display:flex; align-items:center; justify-content:center; color:#a00; font-family:monospace; font-size:1.2em; min-height:200px;\">Error: ${escapeHtml(e.message)}</div>`;
+      return warn(`crmap: error processing file: ${file} ${e && e.message ? e.message : ''}`);
     }
   }
 
@@ -654,11 +655,15 @@ module.exports = function (eleventyConfig) {
     let pageState = this && this.ctx ? this.ctx._crmapState : null;
     let useCrid = crid;
     if (!useCrid && pageState) useCrid = pageState.lastCrid;
-    if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_rdetails: missing crid (no crmap rendered yet)</div>';
+    if (!useCrid) {
+      return warn('crmap_rdetails: missing crid (no crmap rendered yet)');
+    }
     const v = validateCrid(useCrid.toString());
-    if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
+    if (!v.ok) {
+      return warn(`crmap_rdetails: ${v.message}`);
+    }
     if (!pageState || !pageState.crids.has(useCrid.toString())) {
-      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
+      return warn(`crmap_rdetails: unknown crid '${useCrid}' (render map first)`);
     }
     if (placeholder === null || placeholder === true) {
       placeholder = 'Select a region for details.';
@@ -672,11 +677,15 @@ module.exports = function (eleventyConfig) {
     let pageState = this && this.ctx ? this.ctx._crmapState : null;
     let useCrid = crid;
     if (!useCrid && pageState) useCrid = pageState.lastCrid;
-    if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_udetails: missing crid (no crmap rendered yet)</div>';
+    if (!useCrid) {
+      return warn('crmap_udetails: missing crid (no crmap rendered yet)');
+    }
     const v = validateCrid(useCrid.toString());
-    if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
+    if (!v.ok) {
+      return warn(`crmap_udetails: ${v.message}`);
+    }
     if (!pageState || !pageState.crids.has(useCrid.toString())) {
-      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
+      return warn(`crmap_udetails: unknown crid '${useCrid}' (render map first)`);
     }
     if (placeholder === null || placeholder === true) {
       placeholder = 'Select a unit.';
@@ -690,11 +699,15 @@ module.exports = function (eleventyConfig) {
     let pageState = this && this.ctx ? this.ctx._crmapState : null;
     let useCrid = crid;
     if (!useCrid && pageState) useCrid = pageState.lastCrid;
-    if (!useCrid) return '<div class="cr-error" style="color:#a00">crmap_commands: missing crid (no crmap rendered yet)</div>';
+    if (!useCrid) {
+      return warn('crmap_commands: missing crid (no crmap rendered yet)');
+    }
     const v = validateCrid(useCrid.toString());
-    if (!v.ok) return `<div class=\"cr-error\" style=\"color:#a00\">${v.message}</div>`;
+    if (!v.ok) {
+      return warn(`crmap_commands: ${v.message}`);
+    }
     if (!pageState || !pageState.crids.has(useCrid.toString())) {
-      return `<div class=\"cr-error\" style=\"color:#a00\">Unknown crid '${useCrid}' (render map first)</div>`;
+      return warn(`crmap_commands: unknown crid '${useCrid}' (render map first)`);
     }
     if (placeholder === null || placeholder === true) {
       placeholder = 'Select a unit for commands.';
@@ -706,7 +719,7 @@ module.exports = function (eleventyConfig) {
 
   function renderOrderFile(fileName, optionsJson) {
     if (!fileName || typeof fileName !== 'string') {
-      return '<div class="cr-error">orderfile: missing file name</div>';
+      return warn('orderfile: missing file name');
     }
     // parse options
     const opts = { markdownInComments: true, fileLink: true, commentsAsOrders: false, renderSpecial: false };
@@ -720,16 +733,16 @@ module.exports = function (eleventyConfig) {
           if (Object.prototype.hasOwnProperty.call(parsed, 'renderSpecial')) opts.renderSpecial = !!parsed.renderSpecial;
         }
       } catch (e) {
-        return `<div class=\"cr-error\" style=\"color:#a00; font-family:monospace;\">orderfile: invalid options JSON: ${escapeHtml(e.message)}</div>`;
+        return warn(`orderfile: invalid options JSON: ${e.message}`);
       }
     }
 
     const resolved = resolveUserPath(fileName, this);
     if (resolved.error) {
-      return `<div class=\"cr-error\">orderfile: path error: ${escapeHtml(resolved.error)} (${escapeHtml(fileName)})</div>`;
+      return warn(`orderfile : path error: ${resolved.error} ${fileName}`);
     }
     if (!fs.existsSync(resolved.fsPath)) {
-      return `<div class=\"cr-error\">orderfile: file not found: ${escapeHtml(fileName)}</div>`;
+      return warn(`orderfile: file not found: ${fileName} -> ${resolved.fsPath}`, `orderfile: file not found: ${fileName}`);
     }
     const content = fs.readFileSync(resolved.fsPath, 'utf8');
     const rawLines = content.split(/\r?\n/);
@@ -918,7 +931,9 @@ module.exports = function (eleventyConfig) {
     const path = require('path');
     let opts = {};
     if (typeof optionsJson === 'string' && optionsJson.trim() !== '') {
-      try { opts = JSON.parse(optionsJson); } catch (e) { return `<div class=\"cr-error\">readnr: invalid options JSON: ${escapeHtml(e.message)}</div>`; }
+      try { opts = JSON.parse(optionsJson); } catch (e) {
+        return warn(`readnr: invalid options JSON: ${e.message}`);
+      }
     }
     const requestedNrid = opts && typeof opts.nrid === 'string' && opts.nrid !== '' ? opts.nrid : undefined;
     const pageState = _getPageNrState(this);
@@ -926,15 +941,23 @@ module.exports = function (eleventyConfig) {
     let nrid;
     if (requestedNrid) {
       const v = validateCrid(requestedNrid);
-      if (!v.ok) return `<div class=\"cr-error\">${escapeHtml(v.message)}</div>`;
-      if (pageState.nrids.has(requestedNrid)) return `<div class=\"cr-error\">readnr: duplicate nrid '${escapeHtml(requestedNrid)}' on this page</div>`;
+      if (!v.ok) {
+        return warn(`readnr: ${v.message}`);
+      }
+      if (pageState.nrids.has(requestedNrid)) {
+        return warn(`readnr: duplicate id '${requestedNrid}' on this page`);
+      }
       nrid = requestedNrid;
     } else {
       nrid = (++pageState.counter).toString();
     }
     const resolved = resolveUserPath(file, this);
-    if (resolved.error) return `<div class=\"cr-error\">readnr: path error: ${escapeHtml(resolved.error)} (${escapeHtml(file)})</div>`;
-    if (!fs.existsSync(resolved.fsPath)) return `<div class=\"cr-error\">readnr: file not found: ${escapeHtml(file)}</div>`;
+    if (resolved.error) {
+      return warn(`readnr: path error: ${resolved.error} ${file}`);
+    }
+    if (!fs.existsSync(resolved.fsPath)) {
+      return warn(`readnr: File not found: ${resolved.fsPath}`);
+    }
     const content = fs.readFileSync(resolved.fsPath, 'utf8');
     const rawLines = content.split(/\r?\n/);
     const bookmarks = {};
@@ -1175,19 +1198,24 @@ module.exports = function (eleventyConfig) {
     }
     if (typeof arg2 === 'undefined') {
       if (typeof arg1 === 'string' && arg1.trim().startsWith('{')) {
-        try { opts = JSON.parse(arg1); } catch (e) { return `<div class=\"cr-error\">shownr: invalid JSON: ${escapeHtml(e.message)}</div>`; }
+        try { opts = JSON.parse(arg1); } catch (e) {
+          return warn(`shownr: invalid options JSON: ${e.message}`);
+        }
       } else if (typeof arg1 === 'string' && parseRangeString(arg1)) {
         opts.range = parseRangeString(arg1);
       } else if (typeof arg1 === 'string') {
         opts.bookmark = arg1;
       } else {
+        warn(`shownr: Invalid arguments: ${arg1}, ${arg2}`);
         return `<div class=\"cr-error\">shownr: invalid arguments</div>`;
       }
     } else {
       if (typeof arg1 === 'string' && validateCrid(arg1).ok) {
         opts.nrid = arg1;
         if (typeof arg2 === 'string' && arg2.trim().startsWith('{')) {
-          try { Object.assign(opts, JSON.parse(arg2)); } catch (e) { return `<div class=\"cr-error\">shownr: invalid JSON: ${escapeHtml(e.message)}</div>`; }
+          try { Object.assign(opts, JSON.parse(arg2)); } catch (e) {
+            warn(`shownr: invalid options JSON: ${e.message}`);
+          }
         } else if (parseRangeString(arg2)) {
           opts.range = parseRangeString(arg2);
         } else { opts.bookmark = arg2; }
@@ -1196,7 +1224,9 @@ module.exports = function (eleventyConfig) {
         if (parseRangeString(arg1)) opts.range = parseRangeString(arg1); else opts.bookmark = arg1;
       } else {
         if (typeof arg2 === 'string' && arg2.trim().startsWith('{')) {
-          try { Object.assign(opts, JSON.parse(arg2)); } catch (e) { return `<div class=\"cr-error\">shownr: invalid JSON: ${escapeHtml(e.message)}</div>`; }
+          try { Object.assign(opts, JSON.parse(arg2)); } catch (e) {
+            warn(`shownr: invalid options JSON: ${e.message}`);
+          }
           if (!opts.nrid && typeof arg1 === 'string') { if (parseRangeString(arg1)) opts.range = parseRangeString(arg1); else opts.bookmark = arg1; }
         } else {
           if (typeof arg1 === 'string' && validateCrid(arg1).ok) opts.nrid = arg1; else opts.bookmark = arg1;
@@ -1216,8 +1246,12 @@ module.exports = function (eleventyConfig) {
 
     let nrid = opts.nrid;
     if (!nrid) nrid = pageState.lastNrid;
-    if (!nrid) return `<div class=\"cr-error\">shownr: no nrid specified and no previous readnr on this page</div>`;
-    if (!pageState.nrFiles || !pageState.nrFiles[nrid]) return `<div class=\"cr-error\">shownr: unknown nrid '${escapeHtml(nrid)}' (did you call readnr first?)</div>`;
+    if (!nrid) {
+      return warn(`shownr: no nrid specified and no previous readnr on this page`);
+    }
+    if (!pageState.nrFiles || !pageState.nrFiles[nrid]) {
+      return warn(`shownr: unknown nrid '${escapeHtml(nrid)}' (did you call readnr first?)`);
+    }
 
     let lineNumbers = opts.lineNumbers || false;
 
@@ -1227,7 +1261,9 @@ module.exports = function (eleventyConfig) {
     if (opts.bookmark) {
       if (opts.bookmark === 'list') {
         const bookmarks = Object.keys(fileInfo.bookmarks || {});
-        if (bookmarks.length === 0) return `<div class=\"cr-error\">shownr: no bookmarks available for nrid '${escapeHtml(nrid)}'</div>`;
+        if (bookmarks.length === 0) {
+          return warn(`shownr: no bookmarks available for nrid '${nrid}'`, `<div class=\"cr-error\">shownr: no bookmarks available for nrid '${escapeHtml(nrid)}'</div>`);
+        }
         const listItems =
           bookmarks.map(bm => {
             const b = fileInfo.bookmarks[bm];
@@ -1236,11 +1272,15 @@ module.exports = function (eleventyConfig) {
         return `<div class=\"shownr-bookmarks crs-requires-css\" data-nrid=\"${escapeHtml(nrid)}\"><ul>${listItems}</ul></div>`;
       }
       const bm = fileInfo.bookmarks && fileInfo.bookmarks[opts.bookmark];
-      if (!bm) return `<div class=\"cr-error\">shownr: unknown bookmark '${escapeHtml(opts.bookmark)}' for nrid '${escapeHtml(nrid)}'</div>`;
+      if (!bm) {
+        return warn(`shownr: unknown bookmark '${opts.bookmark}' for nrid '${nrid}'`);
+      }
       start = bm.start; end = bm.end;
     } else if (opts.range) {
       start = Math.max(1, opts.range.start); end = Math.min(totalLines, opts.range.end);
-      if (start > end) return `<div class=\"cr-error\">shownr: invalid range ${start}-${end}</div>`;
+      if (start > end) {
+        return warn(`shownr: invalid range ${start}-${end} for nrid '${nrid}'`);
+      }
     }
     const slice = fileInfo.lines.slice(start - 1, end);
     const inner = slice.map((ln, idx) => {
