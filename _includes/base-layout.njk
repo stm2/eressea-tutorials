@@ -3,9 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Eressea Beispielpartie</title>
+  <title>Eressea Beispielpartie - {{title}}</title>
 
-  <link rel="stylesheet" href="{{ '/css/site.css' | url }}">
+  <link rel="stylesheet" href="{{ '/css/site.css' }}">
+{% if content.indexOf('crs-requires-css') !== -1 %}
+  <link rel="stylesheet" href="{{ '/css/crs.css' }}">
+{% endif %}
+{% if content.indexOf('crs-requires-js') !== -1 %}
+  <script src="{{ '/crs/crs-passthrough.js' }}" defer></script>
+{% endif %}
+
   <!-- link href="https://fonts.googleapis.com/css?family=Roboto+Slab:700|Roboto&display=fallback" rel="stylesheet" -->
 </head>
 <body>

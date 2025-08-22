@@ -1,4 +1,5 @@
 const moment = require('moment');
+const crs = require('./crs/crs.js');
 
 moment.locale('en');
 
@@ -28,6 +29,8 @@ module.exports = function (eleventyConfig) {
 
   // Folders to copy to output folder
   eleventyConfig.addPassthroughCopy("css");
+
+  crs(eleventyConfig);
 };
 
 module.exports.config = {

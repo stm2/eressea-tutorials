@@ -1,0 +1,197 @@
+/* CR map unit list styling */
+.cr-region-details .unit_block ul {
+  list-style: none;
+  padding-left: 0.5em;
+  margin: 0.25em 0;
+}
+
+.cr-region-details .unit_block li {
+  position: relative;
+  padding-left: 1.2em;
+  cursor: pointer;
+}
+
+.cr-region-details .unit_block li::before {
+  position: absolute;
+  left: 0;
+  width: 1em;
+  display: inline-block;
+  text-align: center;
+  content: '-';
+  color: #666;
+  font-weight: normal;
+}
+
+.cr-region-details .unit_block li.owner-unit::before {
+  content: '*';
+  font-weight: bold;
+}
+
+.cr-region-details .unit_block li:hover::before {
+  transform: scale(1.1);
+}
+
+.cr-region-details .unit_block li.owner-unit:hover::before {
+  color: #ffcc33;
+}
+
+/* CR map layout & tooltip extracted from inline styles */
+.cr-svg-wrapper {
+  max-width: 100%;
+  max-height: 600px;
+  overflow: auto;
+  position: relative;
+}
+
+.cr-tooltip {
+  display: none;
+  position: fixed;
+  pointer-events: none;
+  background: rgba(30, 30, 30, 0.85);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font: 12px/1.2 monospace;
+  z-index: 9999;
+}
+
+.cr-error {
+  color: #a00;
+  font-family: monospace;
+}
+
+/* Orderfile styling */
+
+.orderfile {
+  font-family: monospace;
+  font-size: 0.95em;
+}
+
+.order-line {
+  padding: 0.08em 0.25em;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.order-line+.order-line {
+  margin-top: 0.08em;
+}
+
+.order-line.empty {
+  height: 0.4em;
+}
+
+/* Comments: lighter, slightly indented, italic */
+.order-line.comment {
+  background: rgba(200, 200, 200, 0.03);
+  color: #555;
+  padding-left: 0.5em;
+  font-family: sans-serif;
+  border-left: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.order-line.comment+.order-line.comment {
+  margin-top: 0.06em;
+}
+
+/* Orders: more prominent */
+.order-line.order {
+  background: rgba(0, 0, 0, 0.02);
+  color: #111;
+  padding-left: 0.25em;
+}
+
+.order-line.order .order-keyword {
+  font-weight: 600;
+  color: #0b5394;
+  text-decoration: none;
+}
+
+.order-line.order+.order-line.order {
+  margin-top: 0.06em;
+}
+
+/* Some orders (diagnostics) are rendered as 'order' but without auto-link */
+.order-line.no-link {
+  color: #222;
+}
+
+/* Slightly reduce spacing before and after the whole block */
+.orderfile {
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+
+/* shownr / nr helpers: render in same monospace font and spacing as orderfile/order-line */
+.shownr-wrapper {
+  display: block;
+}
+
+.nr-registered {
+  font-family: monospace;
+  font-size: 0.95em;
+}
+
+.shownr {
+  font-family: monospace;
+  font-size: 0.8em;
+  overflow-x: auto;
+  padding: 0.35em;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fbfbfb;
+  border-radius: 6px;
+}
+
+.shownr-line {
+  font-family: monospace;
+  padding: 0.08em 0.25em;
+  margin: 0;
+  line-height: 1.15;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.shownr-line+.shownr-line {
+  margin-top: 0.08em;
+}
+
+/* nicer scrollbars on WebKit/Blink */
+.shownr::-webkit-scrollbar {
+  height: 10px;
+  background: transparent;
+}
+
+.shownr::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+}
+
+.shownr::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* Firefox scrollbar width hint */
+.shownr {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+.shownr-file {
+  font-family: inherit;
+  /* use site default font */
+  font-size: 0.95em;
+  color: #333;
+  margin-bottom: 0.25em;
+}
+
+.nr-registered {
+  display: none;
+}
+
+.shownr-linenr {
+  display: inline-block;
+  width: 2em;
+  text-align: right;
+  color: #999;
+  padding-right: 0.5em;
+}
