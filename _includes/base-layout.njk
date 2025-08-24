@@ -17,11 +17,42 @@
 </head>
 <body>
 <header>
-  <a href="{{ '/' | url }}" class="link--home">Beispielpartie</a>
-  <a href="{{ '..' | url }}" class="link--up">Up</a>
+  <a href="{{ '/' }}" class="link--home">Beispielpartie</a>
+  <a href="{{ '..' }}" class="link--up">Up</a>
 </header>
 <main>
   {{ content | safe }}
+  {%- set currentindex = 0 %}
+{%- set lastindex = 0 %}
+{%- set radius = 1 %}
+{%- for pageEntry in pagination.pages %}
+{%- if page.url == pagination.hrefs[ loop.index0 ] %}
+{%- set currentindex = loop.index0 %}
+{%- endif %}
+{%- set lastindex = loop.index0 %}
+{%- endfor %}
+
+{%- if lastindex > 0 %}
+
+<nav aria-labelledby="faction-pagination">
+  <ol class='navlist'> 
+    {% if page.url != pagination.href.first and currentindex > 3 %}<li><a href="{{ pagination.href.first }}">1</a></li>{% endif %}
+    {% if pagination.href.previous %}<li><a href="{{ pagination.href.previous }}">&larr;</a></li>{% endif %}
+
+{%- for pageEntry in pagination.pages %}
+{% if page.url == pagination.hrefs[ loop.index0 ] %}
+    <li>{{ loop.index }}</li> 
+{% elif currentindex - loop.index0 <= radius and loop.index0 - currentindex <= radius %}
+    <li><a href="{{ pagination.hrefs[ loop.index0 ] }}">{{ loop.index }}</a></li>
+{% elif currentindex - loop.index0 <= radius + 1 and loop.index0 - currentindex <= radius + 1 %}
+  <li>&hellip;</li>
+{% endif %}
+{%- endfor %}
+    {% if pagination.href.next %}<li><a href="{{ pagination.href.next }}">&rarr;</a></li>{% endif %}
+    {% if page.url != pagination.href.last and currentindex < lastindex - 1 %}<li><a href="{{ pagination.href.last }}">{{lastindex + 1}}</a></li>{% endif %}
+  </ol>
+</nav>
+{% endif %}
 </main>
 <footer>&copy; Eressea PBEM</footer>
 </body>
