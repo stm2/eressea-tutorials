@@ -1,22 +1,27 @@
 ---
 layout: base-layout.njk
 title: Eressea Beispielpartie
+pagination:
+  data: collections.race
+  size: 12
+  reverse: false
+  alias: races
 ---
 
-<article>
-    <h1>
-      <a href="goblins">Goblins</a>
-    </h1>
-</article>
+<h1>Eressea Tutorial 2024</h1>
 
-<article>
-    <h1>
-      <a href="aquarians">Meermenschen</a>
-    </h1>
-</article>
+<p>Dies sind die Tagebücher der Parteien, die beim Tutorial 2024 mitgespielt haben. Vielen Dank an alle, die ihren
+Bericht hier zur Verfügung stellen.</p>
 
-<article>
-    <h1>
-      <a href="dwarves">Zwerge</a>
-    </h1>
-</article>
+<p>Some of these will be in English, some in German.</p>
+
+{% for post in races %}
+  <article>
+    <h2>
+      <a href="{{ post.url }}">{{ post.data.title }}</a>
+    </h2>
+
+  </article>
+{% else %}
+  <p>There is nothing here...</p> 
+{% endfor %}
