@@ -1,5 +1,8 @@
 # We don't want Eleventy to include the README.md as a website content file
 README.md
 
+# template directory: help for authors
+# template/
+
 # Unit tests should be ignored by Eleventy
 tests/

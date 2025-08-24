@@ -1,0 +1,43 @@
+ERESSEA 42 "123"
+;TIMESTAMP 1755601343839
+;Magellan Version 2.1.0-788.rc
+; ECHECK -r75 -s -l -w4 -v4.3.2
+LOCALE de
+REGION -2011,0 ; Vosal
+; ECheck Lohn 11
+EINHEIT xda9;		Einheit xda9 [997,90029$]
+; Feinde attackieren!
+ATTACKIERE 2uph ;Einheit 2uph
+ATTACKIERE d3o0 ;Einheit d3o0
+LERNE Unterhaltung
+
+EINHEIT fwpq;		Einheit fwpq [997,90029$]
+ATTACKIERE 2uph ;Einheit 2uph
+ATTACKIERE d3o0 ;Einheit d3o0
+LERNE Unterhaltung
+REGION -2010,0 ; Sanwopavor
+; ECheck Lohn 11
+EINHEIT 8uz4;		Einheit 8uz4 [1,890$,U100]
+LERNE Wahrnehmung
+REGION -2011,2 ; Susot
+; ECheck Lohn 11
+EINHEIT u4fh;		Einheit u4fh [3,0$,Sbrhm]
+ARBEITE
+EINHEIT cfe2;		Einheit cfe2 [3,0$,Snc6o]
+; Ups, kein Silber ...
+ARBEITE
+EINHEIT 5a5n;		Einheit 5a5n [3,0$,SLq4d]
+; Ups, kein Silber!
+LERNE Unterhaltung
+EINHEIT ehp6;		Einheit ehp6 [3,0$,St9au]
+ARBEITE
+EINHEIT 13ii;		Einheit 13ii [3,0$,Ssk4o]
+; **Auf zu neuen Abenteuern!**
+NACH no o so o
+EINHEIT d19j;		Einheit d19j [3,0$,S3oq4]
+ARBEITE
+EINHEIT rtqa;		Einheit rtqa [3,0$,Sb0ae]
+ARBEITE
+EINHEIT fa66;		Einheit fa66 [3,0$,S7k9d]
+ARBEITE
+NÄCHSTER
