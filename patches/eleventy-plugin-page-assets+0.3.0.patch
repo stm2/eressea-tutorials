@@ -1,0 +1,122 @@
+diff --git a/node_modules/eleventy-plugin-page-assets/src/plugin.js b/node_modules/eleventy-plugin-page-assets/src/plugin.js
+index 72875cc..77bed09 100644
+--- a/node_modules/eleventy-plugin-page-assets/src/plugin.js
++++ b/node_modules/eleventy-plugin-page-assets/src/plugin.js
+@@ -16,6 +16,8 @@ const pluginOptions = {
+   postsMatching: "*.md",
+   assetsMatching: "*.png|*.jpg|*.gif",
+ 
++  silent: false,
++
+   recursive: false, // only mode:directory
+ 
+   hashAssets: true, // only mode:parse
+@@ -38,53 +40,56 @@ async function transformParser(content, outputPath) {
+       const templateDir = path.dirname(template.inputPath);
+       const outputDir = path.dirname(outputPath);
+ 
+-        // parse
+-        const dom = new JSDOM(content);
+-        const elms = [...dom.window.document.querySelectorAll("img")]; //TODO: handle different tags
++      // parse
++      const dom = new JSDOM(content);
++      const elms = [...dom.window.document.querySelectorAll("img")]; //TODO: handle different tags
+ 
++      if (pluginOptions.silent !== true)
+         console.log(LOG_PREFIX, `Found ${elms.length} assets in ${outputPath} from template ${inputPath}`);
+-        await Promise.all(elms.map(async (img) => {
++      await Promise.all(elms.map(async (img) => {
+ 
+-          const src = img.getAttribute("src");
+-          if (isRelative(src) && pm.isMatch(src, pluginOptions.assetsMatching, { contains: true })) {
++        const src = img.getAttribute("src");
++        if (isRelative(src) && pm.isMatch(src, pluginOptions.assetsMatching, { contains: true })) {
+ 
+-            const assetPath = path.join(templateDir, src);
+-            const assetSubdir = path.relative(templateDir, path.dirname(assetPath));
+-            const assetBasename = path.basename(assetPath);
++          const assetPath = path.join(templateDir, src);
++          const assetSubdir = path.relative(templateDir, path.dirname(assetPath));
++          const assetBasename = path.basename(assetPath);
+ 
+-            let destDir = path.join(outputDir, assetSubdir);
+-            let destPath = path.join(destDir, assetBasename);
+-            let destPathRelativeToPage = path.join('./', assetSubdir, assetBasename);
++          let destDir = path.join(outputDir, assetSubdir);
++          let destPath = path.join(destDir, assetBasename);
++          let destPathRelativeToPage = path.join('./', assetSubdir, assetBasename);
+ 
+-            // resolve asset
+-            if (await resolveFile(assetPath)) {
++          // resolve asset
++          if (await resolveFile(assetPath)) {
+ 
+-              // calculate hash
+-              if (pluginOptions.hashAssets) {
+-                const hash = await hashFile(assetPath, pluginOptions.hashingAlg, pluginOptions.hashingDigest);
+-                if (pluginOptions.addIntegrityAttribute)
+-                  img.setAttribute("integrity", `${pluginOptions.hashingAlg}-${hash}`);
++            // calculate hash
++            if (pluginOptions.hashAssets) {
++              const hash = await hashFile(assetPath, pluginOptions.hashingAlg, pluginOptions.hashingDigest);
++              if (pluginOptions.addIntegrityAttribute)
++                img.setAttribute("integrity", `${pluginOptions.hashingAlg}-${hash}`);
+ 
+-                // rewrite paths
+-                destDir = outputDir; // flatten subdir
+-                destPath = path.join(destDir, hash + path.extname(assetBasename))
+-                destPathRelativeToPage = './' + path.join(hash + path.extname(assetBasename))
+-                img.setAttribute("src", destPathRelativeToPage);
+-              }
++              // rewrite paths
++              destDir = outputDir; // flatten subdir
++              destPath = path.join(destDir, hash + path.extname(assetBasename))
++              destPathRelativeToPage = './' + path.join(hash + path.extname(assetBasename))
++              img.setAttribute("src", destPathRelativeToPage);
++            }
+ 
+-              console.log(LOG_PREFIX, `Writting ./${destPath} from ./${assetPath}`);
+-              fs.mkdirSync(destDir, { recursive: true });
+-              await fs.promises.copyFile(assetPath, destPath);
++            if (pluginOptions.silent !== true)
++              console.log(LOG_PREFIX, `Writing ./${destPath} from ./${assetPath}`);
++            fs.mkdirSync(destDir, { recursive: true });
++            await fs.promises.copyFile(assetPath, destPath);
+ 
+-            } else {
+-              throw new Error(`${LOG_PREFIX} Cannot resolve asset "${src}" in "${outputPath}" from template "${inputPath}"!`);
+-            }
++          } else {
++            throw new Error(`${LOG_PREFIX} Cannot resolve asset "${src}" in "${outputPath}" from template "${inputPath}"!`);
+           }
++        }
+ 
+-        }));
++      }));
+ 
++      if (pluginOptions.silent !== true)
+         console.log(LOG_PREFIX, `Processed ${elms.length} images in "${outputPath}" from template "${inputPath}"`);
+-        content = dom.serialize();
++      content = dom.serialize();
+     }
+   }
+   return content;
+@@ -101,7 +106,7 @@ async function transformDirectoryWalker(content, outputPath) {
+       const templateDir = path.dirname(template.inputPath);
+       const outputDir = path.dirname(outputPath);
+ 
+-      const assets = [];
++      let assets = [];
+       if (pluginOptions.recursive) {
+         for await (const file of walk(templateDir)) {
+           assets.push(file);
+@@ -121,7 +126,8 @@ async function transformDirectoryWalker(content, outputPath) {
+           const destDir = path.join(outputDir, relativeSubDir);
+           const dest = path.join(destDir, basename);
+ 
+-          console.log(LOG_PREFIX, `Writting ./${dest} from ./${from}`);
++          if (pluginOptions.silent !== true)
++            console.log(LOG_PREFIX, `Writing ./${dest} from ./${from}`);
+           fs.mkdirSync(destDir, { recursive: true });
+           await fs.promises.copyFile(from, dest);
+         }
