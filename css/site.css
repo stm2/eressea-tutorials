@@ -97,7 +97,8 @@ a:hover {
   color: #20399daa;
 }
 
-time {
+time,
+author {
   color: #666666;
 }
 
