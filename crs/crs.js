@@ -4,7 +4,7 @@ const path = require('path');
 const { start } = require('repl');
 
 // Library version (update when changing public shortcode behavior)
-const CRS_VERSION = '0.2.2';
+const CRS_VERSION = '0.2.3';
 // Export version for external use (e.g., in layouts via require) and add as global data below
 module.exports.CRS_VERSION = CRS_VERSION;
 
